@@ -10,6 +10,8 @@ import { renderMainAction } from './ui/mainActionBtn.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
 
+console.log('main.js: loaded ok')
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ---- ROUTER ----
