@@ -145,3 +145,6 @@ button, input, select, .tile, .chip {
   font-size:.9rem;
 }
 .tile:hover { border-color: rgba(0,0,0,.18); }
+
+#breadcrumbs .inline-flex { padding: .2rem .4rem; border-radius: 8px; background: rgba(0,0,0,.03); }
+
