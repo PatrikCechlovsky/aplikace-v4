@@ -1,7 +1,7 @@
+// src/main.js
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// UI / layout
 import { initAuthUI, signOut } from './ui/auth.js'
 import { initThemeUI } from './ui/theme.js'
 import { renderSidebar } from './ui/sidebar.js'
@@ -12,18 +12,18 @@ import { getState, setModule, setUnsaved } from './app/state.js'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// -------- Router helpers --------
+// ---- ROUTER ----
 function parseRoute() {
-  // #/m/<mod>/t/<tile>  |  #/m/<mod>/f/<form>  |  dashboard
+  // #/m/<mod>/t/<tile>  |  #/m/<mod>/f/<form>  |  #/dashboard
   const raw = (location.hash || '#/dashboard').slice(1)
   const seg = raw.split('/')
   if (seg[0] !== 'm') return { type:'root' } // dashboard
   return {
     type: 'module',
     mod: seg[1],
-    kind: (seg[2] || 't'),        // 't' = tile, 'f' = form
+    kind: (seg[2] || 't'),   // 't' | 'f'
     id: seg[3] || null,
-    params: new URLSearchParams(location.search)
+    params: new URLSearchParams(location.search),
   }
 }
 function syncModuleFromHash(){
@@ -31,7 +31,7 @@ function syncModuleFromHash(){
   setModule(r.type === 'module' ? r.mod : 'dashboard')
 }
 
-// -------- Renderers --------
+// ---- RENDER ----
 async function renderContent(){
   const route = parseRoute()
   const content   = document.getElementById('content')
@@ -40,10 +40,9 @@ async function renderContent(){
   const bcEl      = document.getElementById('breadcrumbs')
 
   if (route.type === 'root') {
-    // Dashboard (zatím placeholder)
+    bcEl.textContent = 'Hlavní panel'
     tilesEl.innerHTML = ''
     mainActEl.innerHTML = ''
-    bcEl.textContent = 'Hlavní panel'
     content.innerHTML = `<div class="card p-8 text-sm muted">Dashboard – sem dáme 7 karet.</div>`
     return
   }
@@ -52,26 +51,30 @@ async function renderContent(){
   if (!modConf) {
     bcEl.textContent = 'Hlavní panel'
     content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
+    tilesEl.innerHTML = ''
+    mainActEl.innerHTML = ''
     return
   }
 
   // breadcrumbs
   bcEl.textContent = `Hlavní panel › ${modConf.title}`
 
-  // tiles lišta (#3)
+  // tiles (#3)
   tilesEl.innerHTML = (modConf.tiles || [])
     .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`)
     .join('')
 
-  // hlavní akce (#5)
+  // main action (#5)
   if (modConf.forms?.length) {
     const firstForm = modConf.forms[0]
-    mainActEl.innerHTML = `<a class="px-3 py-1 bg-slate-900 text-white rounded text-sm" href="#/m/${modConf.id}/f/${firstForm.id}">+ ${firstForm.label}</a>`
+    mainActEl.innerHTML = `
+      <a class="px-3 py-1 bg-slate-900 text-white rounded text-sm"
+         href="#/m/${modConf.id}/f/${firstForm.id}">+ ${firstForm.label}</a>`
   } else {
     mainActEl.innerHTML = ''
   }
 
-  // načti index modulu a vykresli dlaždici/formulář
+  // modul – lazy import indexu a vykreslení
   const { renderModule } = await import(`./modules/${modConf.id}/index.js`)
   const kind = route.kind === 'f' ? 'form' : 'tile'
   const id = route.id || (kind === 'tile' ? modConf.defaultTile : modConf.forms?.[0]?.id)
@@ -81,10 +84,10 @@ async function renderContent(){
 function renderChrome(){
   renderSidebar(document.getElementById('sidebar'))
   renderHeaderActions(document.getElementById('header-actions'))
-  renderMainAction(document.getElementById('main-action-btn')) // některé implementace ho plní tady
+  renderMainAction(document.getElementById('main-action-btn'))
 }
 
-// -------- Events --------
+// ---- EVENTS ----
 window.addEventListener('hashchange', () => {
   syncModuleFromHash()
   renderChrome()
@@ -94,11 +97,11 @@ window.addEventListener('hashchange', () => {
 window.addEventListener('load', async () => {
   initAuthUI()
 
-  // theme picker
+  // vzhled (light/dark/gray)
   const themeMount = document.getElementById('themePicker')
   if (themeMount) initThemeUI(themeMount)
 
-  // odhlášení tlačítko (volitelné)
+  // odhlásit (volitelné)
   const tb = document.getElementById('toolbar')
   if (tb) {
     tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
@@ -107,7 +110,7 @@ window.addEventListener('load', async () => {
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
 
-  // home-button (#1) + ochrana proti ztrátě práce
+  // home-button + hlídání rozdělané práce
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
     if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
