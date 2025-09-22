@@ -39,4 +39,4 @@ export function renderSidebar(el) {
     </nav>
   `
 }
-
+console.log('MODULES:', MODULES.map(m => m.id))
