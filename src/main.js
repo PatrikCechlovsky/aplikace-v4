@@ -2,7 +2,7 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-import { initAuthUI, signOut, hardResetAuth } from './ui/auth.js'
+import { initAuthUI, signOut } from './ui/auth.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
@@ -19,55 +19,72 @@ function parseRoute() {
 }
 function syncModuleFromHash(){ const r=parseRoute(); setModule(r.type==='module'?r.mod:'dashboard') }
 
-// ---- RENDER ----
-function renderChrome(){
-  renderSidebar(document.getElementById('sidebar'))
-}
+// ---- UI helpers ----
+function renderChrome(){ renderSidebar(document.getElementById('sidebar')) }
 
 function renderActionsBar(modConf){
   const bar = document.getElementById('actions-bar')
   if (!bar) return
+  if (!modConf){ bar.innerHTML = ''; return }
 
-  // tiles → malé "chip" odkazy
-  const tiles = (modConf?.tiles || []).map(t =>
+  const tiles = (modConf.tiles || []).map(t =>
     `<a class="chip tile px-3 py-1 text-sm" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`
   )
-
-  // hlavní akce → "+ První formulář" jako primární mini tlačítko
-  const main = (modConf?.forms?.length)
+  const main = (modConf.forms?.length)
     ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
     : []
 
   bar.innerHTML = [...tiles, ...main].join('')
 }
 
+function renderBreadcrumbs(modConf, item, kind){
+  const bc = document.getElementById('breadcrumbs')
+  if (!bc){ return }
+  if (!modConf){ bc.innerHTML = ''; return }
+
+  const sep = `<span class="mx-2 text-slate-300">/</span>`
+  const mod = `<span class="inline-flex items-center gap-1">${modConf.icon || ''} ${modConf.title}</span>`
+  const it  = item ? `<span class="inline-flex items-center gap-1">${item.icon || ''} ${kind==='form' ? item.label : item.label}</span>` : ''
+
+  bc.innerHTML = it ? `${mod} ${sep} ${it}` : mod
+}
+
+// ---- CONTENT ----
 async function renderContent(){
-  const route     = parseRoute()
-  const content   = document.getElementById('content')
-  const bcEl      = document.getElementById('breadcrumbs')
+  const route   = parseRoute()
+  const content = document.getElementById('content')
 
   if (route.type === 'root') {
-    bcEl.textContent = 'Hlavní panel'
-    document.getElementById('actions-bar').innerHTML = ''
+    document.getElementById('breadcrumbs').innerHTML = ''      // žádné drobečky na dashboardu
+    document.getElementById('actions-bar').innerHTML = ''      // žádné akce
     content.innerHTML = `<div class="card p-8 text-sm muted">Dashboard – sem dáme 7 karet.</div>`
     return
   }
 
   const modConf = MODULES.find(m => m.id === route.mod)
   if (!modConf) {
-    bcEl.textContent = 'Hlavní panel'
+    document.getElementById('breadcrumbs').innerHTML = ''
     document.getElementById('actions-bar').innerHTML = ''
     content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     return
   }
 
-  bcEl.textContent = `Hlavní panel › ${modConf.title}`
+  // připravíme item (dlaždice nebo formulář)
+  const kind = route.kind === 'f' ? 'form' : 'tile'
+  const fallbackId = kind === 'tile' ? modConf.defaultTile : modConf.forms?.[0]?.id
+  const currId = route.id || fallbackId
+  const item = (kind === 'tile'
+    ? (modConf.tiles || []).find(t => t.id === currId)
+    : (modConf.forms || []).find(f => f.id === currId)
+  ) || null
+
+  // breadcrumbs + actions bar
+  renderBreadcrumbs(modConf, item, kind)
   renderActionsBar(modConf)
 
+  // načti a vykresli modul
   const { renderModule } = await import(`./modules/${modConf.id}/index.js`)
-  const kind = route.kind === 'f' ? 'form' : 'tile'
-  const id = route.id || (kind==='tile' ? modConf.defaultTile : modConf.forms?.[0]?.id)
-  await renderModule(content, { kind, id, params: route.params })
+  await renderModule(content, { kind, id: currId, params: route.params })
 }
 
 // ---- EVENTS ----
@@ -76,24 +93,17 @@ window.addEventListener('hashchange', () => { syncModuleFromHash(); renderChrome
 window.addEventListener('load', async () => {
   initAuthUI(supabase)
 
-  // „Můj účet“ ikona
   const btnAcc = document.getElementById('btnAccount')
   if (btnAcc) btnAcc.onclick = () => { location.hash = '#/m/020-muj-ucet' }
 
-  // Odhlásit
-  // … ve window.load:
   const tb = document.getElementById('toolbar')
   if (tb) {
-    tb.innerHTML = `
-      <button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>
-      <button id="btnResetAuth" class="px-2 py-1 text-xs border rounded bg-white ml-2">Reset přihlášení</button>
-    `
+    tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
     const btn = document.getElementById('btnSignOut')
     btn.onclick = () => signOut(supabase)
-    document.getElementById('btnResetAuth').onclick = () => hardResetAuth(supabase)
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
-  // home button
+
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
     if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
