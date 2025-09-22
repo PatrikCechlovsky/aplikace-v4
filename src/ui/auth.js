@@ -1,62 +1,104 @@
 // src/ui/auth.js
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../supabase.js'
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// UI přihlášení/registrace – očekává supabase klient jako argument
 
-export function initAuthUI() {
-  const btnAuth = document.getElementById('btnAuth')
-  const dialog = document.getElementById('authDialog')
-  const btnClose = document.getElementById('btnCloseAuth')
-  const btnLogin = document.getElementById('btnDoLogin')
-  const btnSignup = document.getElementById('btnDoSignup')
-  const email = document.getElementById('authEmail')
-  const pass = document.getElementById('authPass')
-  const msg = document.getElementById('authMsg')
-  const badge = document.getElementById('userBadge')
+function $(id) { return document.getElementById(id) }
 
-  btnAuth?.addEventListener('click', () => dialog.showModal())
-  btnClose?.addEventListener('click', () => dialog.close())
+export function initAuthUI(supabase){
+  const btnAuth      = $('btnAuth')
+  const dlg          = $('authDialog')
+  const inpEmail     = $('authEmail')
+  const inpPass      = $('authPass')
+  const btnLogin     = $('btnDoLogin')
+  const btnSignup    = $('btnDoSignup')
+  const btnClose     = $('btnCloseAuth')
+  const msg          = $('authMsg')
 
-  btnLogin?.addEventListener('click', async (e) => {
+  // Bezpečí: pokud prvky nejsou v DOM, skonči tiše
+  if (!btnAuth || !dlg || !btnLogin || !btnSignup || !btnClose) return
+
+  // Otevřít dialog
+  btnAuth.onclick = () => {
+    msg.textContent = ''
+    inpEmail.value = ''
+    inpPass.value = ''
+    if (typeof dlg.showModal === 'function') dlg.showModal()
+    else dlg.setAttribute('open','') // fallback pro starší prohl.
+  }
+
+  // Zavřít dialog
+  btnClose.onclick = (e) => {
+    e.preventDefault()
+    if (dlg.close) dlg.close()
+    else dlg.removeAttribute('open')
+  }
+
+  // Login
+  btnLogin.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Přihlašuji…'
-    const { error } = await supabase.auth.signInWithPassword({ email: email.value, password: pass.value })
-    if (error) { msg.textContent = 'Chyba: ' + error.message; return }
-    dialog.close(); location.reload()
-  })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: inpEmail.value.trim(),
+        password: inpPass.value
+      })
+      if (error) throw error
+      msg.textContent = 'OK, přihlášeno.'
+      if (dlg.close) dlg.close()
+      renderAuthBadge(supabase)
+    } catch (err) {
+      msg.textContent = 'Chyba: ' + (err?.message || 'Přihlášení se nezdařilo')
+    }
+  }
 
-  btnSignup?.addEventListener('click', async (e) => {
+  // Registrace
+  btnSignup.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Zakládám účet…'
-    // po registraci pošli potvrzovací e-mail (Supabase pošle automaticky, pokud máš Require email confirmation)
-    const { error } = await supabase.auth.signUp({
-      email: email.value,
-      password: pass.value,
-      options: {
-        emailRedirectTo: window.location.origin // po potvrzení návrat sem
-      }
-    })
-    if (error) { msg.textContent = 'Chyba: ' + error.message; return }
-    msg.innerHTML = 'Účet vytvořen. Zkontroluj e-mail a potvrď registraci.<br/><button id="resendBtn" class="mt-2 px-2 py-1 border rounded">Poslat znovu</button>'
-    // možnost „znovu poslat“
-    setTimeout(() => {
-      document.getElementById('resendBtn')?.addEventListener('click', async () => {
-        const { error: rErr } = await supabase.auth.resend({
-          type: 'signup',
-          email: email.value,
-          options: { emailRedirectTo: window.location.origin }
-        })
-        msg.textContent = rErr ? ('Chyba: ' + rErr.message) : 'Odesláno znovu. Zkontroluj e-mail.'
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: inpEmail.value.trim(),
+        password: inpPass.value,
+        options: {
+          emailRedirectTo: location.origin + '/#/m/020-muj-ucet'
+        }
       })
-    })
+      if (error) throw error
+      msg.textContent = 'Hotovo. Zkontroluj email a potvrď registraci.'
+    } catch (err) {
+      msg.textContent = 'Chyba: ' + (err?.message || 'Registrace se nezdařila')
+    }
+  }
+
+  // Reakce na změnu auth stavu
+  supabase.auth.onAuthStateChange((_event, _session) => {
+    renderAuthBadge(supabase)
   })
 
-  supabase.auth.getUser().then(({ data: { user } }) => {
-    if (badge) badge.textContent = user?.email ?? ''
-    document.getElementById('btnAuth')?.classList.toggle('hidden', !!user)
-  })
+  // Inicializace badge po načtení
+  renderAuthBadge(supabase)
 }
 
-export async function signOut() {
-  await supabase.auth.signOut(); location.reload()
+export async function signOut(supabase){
+  await supabase.auth.signOut()
+  renderAuthBadge(supabase)
+}
+
+// Zobrazí email místo „Přihlásit“ (a naopak)
+async function renderAuthBadge(supabase){
+  const btnAuth = document.getElementById('btnAuth')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!btnAuth) return
+
+  if (user) {
+    btnAuth.textContent = user.email || 'Přihlášen'
+    btnAuth.classList.remove('bg-slate-900','text-white')
+    btnAuth.classList.add('bg-white','border')
+    // Klik na badge otevře profil
+    btnAuth.onclick = () => { location.hash = '#/m/020-muj-ucet' }
+  } else {
+    btnAuth.textContent = 'Přihlásit'
+    btnAuth.classList.add('bg-slate-900','text-white')
+    btnAuth.classList.remove('bg-white','border')
+    // Klik na „Přihlásit“ otevře dialog (handler nastaví initAuthUI)
+  }
 }
