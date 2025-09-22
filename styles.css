@@ -1,4 +1,60 @@
+/* Základ */
+:root {
+  --bg: #f8fafc;       /* default (light) */
+  --fg: #0f172a;
+  --card: #ffffff;
+  --muted: #64748b;
+  --ring: rgba(0,0,0,.08);
+}
+
+/* Témata přes [data-theme] */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --muted: #64748b;
+  --ring: rgba(0,0,0,.08);
+}
+
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --fg: #e5e7eb;
+  --card: #0f172a;
+  --muted: #94a3b8;
+  --ring: rgba(255,255,255,.12);
+}
+
+[data-theme="gray"] {
+  --bg: #eaeaea;
+  --fg: #1f2937;
+  --card: #f3f3f3;
+  --muted: #6b7280;
+  --ring: rgba(0,0,0,.08);
+}
+
+/* Utility */
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
 .card {
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+  box-shadow: 0 1px 3px var(--ring);
+  background: var(--card);
 }
+.muted { color: var(--muted); }
+
+/* 7-dílný layout: responsivní “dlaždice” */
+.grid-7 {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .grid-7 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .grid-7 { grid-template-columns: repeat(3, 1fr); }
+}
+/* volitelně lze některé panely roztáhnout */
+.span-2 { grid-column: span 2; }
