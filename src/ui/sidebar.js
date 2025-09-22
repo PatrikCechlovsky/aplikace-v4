@@ -1,16 +1,21 @@
 // src/ui/sidebar.js
 import { MODULES } from '../app/modules.index.js'
-import { getState } from '../app/state.js'
 
-export function renderSidebar(root){
-  const cur = getState().current
-  root.innerHTML = `
-    <nav class="sidebar">
+function activeModFromHash() {
+  const h = (location.hash || '').slice(1).split('/')
+  return h[0] === 'm' ? h[1] : null
+}
+
+export function renderSidebar(el) {
+  if (!el) return
+  const current = activeModFromHash()
+
+  el.innerHTML = `
+    <nav class="sidebar flex flex-col gap-1">
       ${MODULES.map(m => `
-        <a href="#/m/${m.id}" class="${cur===m.id ? 'active' : ''}">
-          ${m.iconPath
-            ? `<img src="${m.iconPath}" alt="" class="icon-16" />`
-            : `<span>${m.icon || '📦'}</span>`}
+        <a class="sidebar-link ${current === m.id ? 'active' : ''}"
+           href="#/m/${m.id}">
+          <span class="sidebar-icon">${m.icon || ''}</span>
           <span>${m.title}</span>
         </a>
       `).join('')}
