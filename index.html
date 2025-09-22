@@ -20,12 +20,11 @@
         <a href="#/pronajimatel" class="px-2 py-1 rounded hover:bg-slate-100">Pronajímatelé</a>
         <a href="#/profil" class="px-2 py-1 rounded hover:bg-slate-100">Profil</a>
       </nav>
-      <div class="ml-auto flex items-center gap-3">
-        <div id="themePicker"></div>
-        <div id="header-actions"></div>   <!-- #4 -->
-        <span id="userBadge" class="text-xs text-slate-500"></span>
-        <button id="btnAuth" class="px-3 py-1 rounded bg-slate-900 text-white text-sm">Přihlásit</button>
-        <div id="toolbar"></div>
+       <div class="ml-auto flex items-center gap-3">
+          <div id="themePicker"></div>
+          <div id="header-actions"></div>
+          <button id="btnAuth" class="px-3 py-1 rounded bg-slate-900 text-white text-sm">Přihlásit</button>
+          <div id="toolbar"></div>
       </div>
     </div>
   </header>
@@ -39,20 +38,20 @@
 </div>
 
   <!-- pod headerem přidej layout wrapper -->
-  <main class="max-w-[1400px] mx-auto p-4">
-    <div id="breadcrumbs" class="text-xs mb-2"></div>  <!-- #2 -->
-    <div class="grid grid-cols-[260px_1fr] gap-4">     <!-- sidebar + pravá část -->
-      <aside id="sidebar" class="card p-2"></aside>    <!-- #7 -->
-      <section>
-        <div class="flex items-center justify-between mb-2">
-          <button id="home-button" class="px-3 py-1 border rounded text-sm">🏠 Domů</button> <!-- #1 -->
-          <div id="main-action-btn"></div>             <!-- #5 -->
-        </div>
-        <div id="module-tiles" class="mb-3"></div>     <!-- #3 -->
-        <div id="content"></div>                       <!-- #6 -->
-      </section>
-    </div>
-  </main>
+ <main class="max-w-[1400px] mx-auto p-4">
+  <div id="breadcrumbs" class="text-xs mb-2"></div>
+  <div class="grid grid-cols-[260px_1fr] gap-4">
+    <aside id="sidebar" class="card p-2"></aside>
+    <section>
+      <div class="flex items-center justify-between mb-2">
+        <button id="home-button" class="px-3 py-1 border rounded text-sm">🏠 Domů</button>
+        <div id="main-action-btn"></div>
+      </div>
+      <div id="module-tiles" class="mb-3"></div>
+      <div id="content"></div>
+    </section>
+  </div>
+</main>
 
 
   <!-- Přihlašovací dialog -->
