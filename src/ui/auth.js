@@ -1,4 +1,4 @@
-// src/ui/auth.js — jednoduché a spolehlivé přihlášení/registrace
+// src/ui/auth.js — přihlášení/registrace + badge se jménem
 
 function $(id){ return document.getElementById(id) }
 
@@ -41,16 +41,28 @@ function setBusy(btn, busy, textBusy){
   else { btn.disabled = false; if(btn.dataset._label){ btn.textContent = btn.dataset._label; delete btn.dataset._label } }
 }
 
-async function showAuthBadge(supabase){
-  const btn = $('btnAuth'); if (!btn) return
+function displayNameFromUser(user){
+  if (!user) return ''
+  const meta = user.user_metadata || {}
+  return meta.full_name || meta.name || user.email || 'Přihlášen'
+}
+
+async function paintAuthBadge(supabase){
+  const btnAuth = $('btnAuth')
+  const nameEl  = $('userName')
   const { data: { user } } = await supabase.auth.getUser().catch(()=>({data:{user:null}}))
+
   if (user){
-    btn.textContent = user.email || 'Přihlášen'
-    btn.classList.remove('bg-slate-900','text-white'); btn.classList.add('bg-white','border')
-    btn.onclick = () => { location.hash = '#/m/020-muj-ucet' }
+    if (nameEl) nameEl.textContent = displayNameFromUser(user)
+    if (btnAuth) { btnAuth.style.display = 'none' } // schovat „Přihlásit“
   } else {
-    btn.textContent = 'Přihlásit'
-    btn.classList.add('bg-slate-900','text-white'); btn.classList.remove('bg-white','border')
+    if (nameEl) nameEl.textContent = ''
+    if (btnAuth) {
+      btnAuth.style.display = ''
+      btnAuth.textContent = 'Přihlásit'
+      btnAuth.classList.add('bg-slate-900','text-white')
+      btnAuth.classList.remove('bg-white','border')
+    }
   }
 }
 
@@ -69,7 +81,7 @@ export function initAuthUI(supabase){
   btnAuth.onclick = () => { msg.textContent=''; email.value=''; pass.value=''; openDlg(dlg) }
   btnClose.onclick = (e)=>{ e.preventDefault(); closeDlg(dlg) }
 
-  // Přihlášení – jasná chybová hláška z API
+  // login
   btnLogin.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Přihlašuji…'
@@ -82,7 +94,7 @@ export function initAuthUI(supabase){
       if (error) throw error
       msg.textContent = 'Přihlášeno.'
       closeDlg(dlg)
-      await showAuthBadge(supabase)
+      await paintAuthBadge(supabase)
       console.log('login OK', data.user?.id)
     }catch(err){
       const t = String(err?.message || '')
@@ -95,7 +107,7 @@ export function initAuthUI(supabase){
     }
   }
 
-  // Registrace – pošle ověřovací e-mail (pokud je potvrzování zapnuté)
+  // registrace
   btnSignup.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Zakládám účet…'
@@ -116,10 +128,11 @@ export function initAuthUI(supabase){
     }
   }
 
-  supabase.auth.onAuthStateChange(() => showAuthBadge(supabase))
-  showAuthBadge(supabase)
+  supabase.auth.onAuthStateChange(() => paintAuthBadge(supabase))
+  paintAuthBadge(supabase)
 }
 
 export async function signOut(supabase){
-  try { await supabase.auth.signOut() } finally { await showAuthBadge(supabase) }
+  try { await supabase.auth.signOut() }
+  finally { await paintAuthBadge(supabase) }
 }
