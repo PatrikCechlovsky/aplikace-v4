@@ -1,6 +1,10 @@
-// Konfigurační soubor modulu Můj účet
-module.exports = {
-  name: "Můj účet",
-  code: "020-muj-ucet",
-  description: "Modul pro správu osobního účtu uživatele.",
-};
+export default {
+  id: '020-muj-ucet',
+  title: 'Můj účet',
+  icon: '👤',
+  defaultTile: 'profile',
+  tiles: [
+    { id: 'profile', label: 'Profil', icon: '📇', import: () => import('./tiles/profile.js') },
+  ],
+  forms: []
+}
