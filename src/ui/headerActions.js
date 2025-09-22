@@ -1,16 +1,10 @@
-// src/ui/headerActions.js (přepiš)
-import { actionBtn, bindActionHandlers } from './actions.js'
-
+// src/ui/headerActions.js
 export function renderHeaderActions(root){
+  // minimalistické globální akce (můžeš rozšířit)
   root.innerHTML = `
-    ${actionBtn('filter', { title:'Hledat/filtry' })}
-    ${actionBtn('notify')}
-    <a href="#/m/020-muj-ucet" class="px-2 py-1 border rounded text-sm bg-white">👤 Můj účet</a>
-    ${actionBtn('help')}
+    <button class="px-2 py-1 border rounded text-sm bg-white" title="Hledat">🔎</button>
+    <button class="px-2 py-1 border rounded text-sm bg-white" title="Notifikace">🔔</button>
+    <a href="#/m/020-muj-ucet" class="px-2 py-1 border rounded text-sm bg-white" title="Můj účet">👤</a>
+    <a href="#/m/990-help" class="px-2 py-1 border rounded text-sm bg-white" title="Nápověda">🆘</a>
   `
-  bindActionHandlers(root, {
-    filter: () => alert('Otevřít panel filtrů…'),
-    notify: () => alert('Notifikace…'),
-    help:   () => location.hash = '#/m/990-help'
-  })
 }
