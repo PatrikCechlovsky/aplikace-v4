@@ -1,6 +1,13 @@
-// Konfigurační soubor modulu Nemovitost
-module.exports = {
-  name: "Nemovitost",
-  code: "040-nemovitost",
-  description: "Modul pro správu nemovitostí.",
-};
+export default {
+  id: '040-nemovitost',
+  title: 'Nemovitosti',
+  icon: '🏘️',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' },
+  ],
+  forms: [
+    { id: 'novy', label: 'Nová nemovitost', icon: '➕' }
+  ]
+}
