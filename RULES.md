@@ -38,7 +38,7 @@
     // …
   ]
 ## Ikony modulů
-- Každý modul má SVG v `docs/icons/<ID>.svg` (např. `030-pronajimatel.svg`).
+// - Každý modul má SVG v `docs/icons/<ID>.svg` (např. `030-pronajimatel.svg`).
 - Pokud SVG chybí, použije se fallback emoji definovaný v `src/app/modules.index.js`.
 
 ## Akce (tlačítka)
