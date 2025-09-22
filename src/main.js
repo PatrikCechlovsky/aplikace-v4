@@ -7,8 +7,11 @@ import { renderSidebar } from './ui/sidebar.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-console.log('main.js loaded')
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,       // ukládá session do localStorage
+    autoRefreshToken: true,     // tiché obnovování tokenu
+    detectSessionInUrl: true,   // pro magic linky (nevadí mít zapnuto)
 
 // ---- ROUTER ----
 function parseRoute() {
