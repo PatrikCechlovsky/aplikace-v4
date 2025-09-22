@@ -2,7 +2,7 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-import { initAuthUI, signOut } from './ui/auth.js'
+import { initAuthUI, signOut, hardResetAuth } from './ui/auth.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
@@ -81,14 +81,18 @@ window.addEventListener('load', async () => {
   if (btnAcc) btnAcc.onclick = () => { location.hash = '#/m/020-muj-ucet' }
 
   // Odhlásit
+  // … ve window.load:
   const tb = document.getElementById('toolbar')
   if (tb) {
-    tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
+    tb.innerHTML = `
+      <button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>
+      <button id="btnResetAuth" class="px-2 py-1 text-xs border rounded bg-white ml-2">Reset přihlášení</button>
+    `
     const btn = document.getElementById('btnSignOut')
     btn.onclick = () => signOut(supabase)
+    document.getElementById('btnResetAuth').onclick = () => hardResetAuth(supabase)
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
-
   // home button
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
