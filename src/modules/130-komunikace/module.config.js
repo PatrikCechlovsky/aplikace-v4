@@ -1,6 +1,13 @@
-// Konfigurační soubor modulu Komunikace
-module.exports = {
-  name: "Komunikace",
-  code: "130-komunikace",
-  description: "Modul pro správu komunikace.",
-};
+export default {
+  id: '130-komunikace',
+  title: 'Komunikace',
+  icon: '📧',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Zprávy',  icon: '📋' },
+  ],
+  forms: [
+    { id: 'nova', label: 'Nová zpráva', icon: '➕' }
+  ]
+}
