@@ -20,7 +20,7 @@ function parseRoute() {
   if (seg[0] !== 'm') return { type: 'root' }
   return { type:'module', mod:seg[1], kind:(seg[2]||'t'), id:seg[3]||null, params:new URLSearchParams(location.search) }
 }
-function syncModuleFromHash(){ const r = parseRoute(); setModule(r.type==='module' ? r.mod : 'dashboard') }
+function syncModuleFromHash(){ const r=parseRoute(); setModule(r.type==='module'?r.mod:'dashboard') }
 
 // ---- RENDER ----
 async function renderContent(){
@@ -49,7 +49,8 @@ async function renderContent(){
 
   bcEl.textContent = `Hlavní panel › ${modConf.title}`
   tilesEl.innerHTML = (modConf.tiles || [])
-    .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`).join('')
+    .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`)
+    .join('')
 
   if (modConf.forms?.length) {
     const f = modConf.forms[0]
@@ -72,14 +73,10 @@ function renderChrome(){
 window.addEventListener('hashchange', () => { syncModuleFromHash(); renderChrome(); renderContent() })
 
 window.addEventListener('load', async () => {
-  // auth UI – klient předáváme
-  initAuthUI(supabase)
-
-  // vzhled (ponecháme, ale „Hustotu“ přesuneme později do Můj účet / Nastavení)
+  initAuthUI(supabase)             // DŮLEŽITÉ: předáváme klienta
   const themeMount = document.getElementById('themePicker')
   if (themeMount) initThemeUI(themeMount)
 
-  // volitelné Odhlásit
   const tb = document.getElementById('toolbar')
   if (tb) {
     tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
@@ -88,7 +85,6 @@ window.addEventListener('load', async () => {
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
 
-  // home button
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
     if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
