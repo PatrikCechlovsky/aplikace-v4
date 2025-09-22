@@ -1,6 +1,12 @@
-// Konfigurační soubor modulu Smlouva
-module.exports = {
-  name: "Smlouva",
-  code: "060-smlouva",
-  description: "Modul pro správu smluv.",
-};
+export default {
+  id: '060-smlouva',
+  title: 'Smlouvy',
+  icon: '📄',
+  defaultTile: 'seznam',
+  tiles: [
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' }
+  ],
+  forms: [
+    { id: 'novy', label: 'Nová smlouva', icon: '➕' }
+  ]
+}
