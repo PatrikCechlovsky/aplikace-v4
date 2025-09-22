@@ -1,6 +1,11 @@
-// Konfigurační soubor modulu Finance
-module.exports = {
-  name: "Finance",
-  code: "090-finance",
-  description: "Modul pro správu financí.",
-};
+export default {
+  id: '090-finance',
+  title: 'Finance',
+  icon: '💸',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Pohyby',  icon: '📋' },
+  ],
+  forms: []
+}
