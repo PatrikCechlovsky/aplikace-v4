@@ -1,6 +1,9 @@
 // src/ui/sidebar.js
 import { MODULES } from '../app/modules.index.js'
 
+// Pomocný log, abychom viděli, že se načetla NOVÁ verze souboru:
+console.log('sidebar.js v10 loaded')
+
 function activeModFromHash() {
   const h = (location.hash || '').slice(1).split('/')
   return h[0] === 'm' ? h[1] : null
