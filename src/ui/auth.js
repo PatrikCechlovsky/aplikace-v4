@@ -1,104 +1,27 @@
 // src/ui/auth.js
-// UI přihlášení/registrace – očekává supabase klient jako argument
+// Přihlašovací UI – funguje s <dialog>, ale pokud chybí/nefunguje,
+// vytvoří a použije vlastní overlay (fallback). Předávej supabase klient.
 
-function $(id) { return document.getElementById(id) }
+function el(id){ return document.getElementById(id) }
 
-export function initAuthUI(supabase){
-  const btnAuth      = $('btnAuth')
-  const dlg          = $('authDialog')
-  const inpEmail     = $('authEmail')
-  const inpPass      = $('authPass')
-  const btnLogin     = $('btnDoLogin')
-  const btnSignup    = $('btnDoSignup')
-  const btnClose     = $('btnCloseAuth')
-  const msg          = $('authMsg')
+function ensureDialogExists(){
+  let dlg = el('authDialog')
+  if (dlg) return dlg
 
-  // Bezpečí: pokud prvky nejsou v DOM, skonči tiše
-  if (!btnAuth || !dlg || !btnLogin || !btnSignup || !btnClose) return
-
-  // Otevřít dialog
-  btnAuth.onclick = () => {
-    msg.textContent = ''
-    inpEmail.value = ''
-    inpPass.value = ''
-    if (typeof dlg.showModal === 'function') dlg.showModal()
-    else dlg.setAttribute('open','') // fallback pro starší prohl.
-  }
-
-  // Zavřít dialog
-  btnClose.onclick = (e) => {
-    e.preventDefault()
-    if (dlg.close) dlg.close()
-    else dlg.removeAttribute('open')
-  }
-
-  // Login
-  btnLogin.onclick = async (e) => {
-    e.preventDefault()
-    msg.textContent = 'Přihlašuji…'
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: inpEmail.value.trim(),
-        password: inpPass.value
-      })
-      if (error) throw error
-      msg.textContent = 'OK, přihlášeno.'
-      if (dlg.close) dlg.close()
-      renderAuthBadge(supabase)
-    } catch (err) {
-      msg.textContent = 'Chyba: ' + (err?.message || 'Přihlášení se nezdařilo')
-    }
-  }
-
-  // Registrace
-  btnSignup.onclick = async (e) => {
-    e.preventDefault()
-    msg.textContent = 'Zakládám účet…'
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: inpEmail.value.trim(),
-        password: inpPass.value,
-        options: {
-          emailRedirectTo: location.origin + '/#/m/020-muj-ucet'
-        }
-      })
-      if (error) throw error
-      msg.textContent = 'Hotovo. Zkontroluj email a potvrď registraci.'
-    } catch (err) {
-      msg.textContent = 'Chyba: ' + (err?.message || 'Registrace se nezdařila')
-    }
-  }
-
-  // Reakce na změnu auth stavu
-  supabase.auth.onAuthStateChange((_event, _session) => {
-    renderAuthBadge(supabase)
-  })
-
-  // Inicializace badge po načtení
-  renderAuthBadge(supabase)
-}
-
-export async function signOut(supabase){
-  await supabase.auth.signOut()
-  renderAuthBadge(supabase)
-}
-
-// Zobrazí email místo „Přihlásit“ (a naopak)
-async function renderAuthBadge(supabase){
-  const btnAuth = document.getElementById('btnAuth')
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!btnAuth) return
-
-  if (user) {
-    btnAuth.textContent = user.email || 'Přihlášen'
-    btnAuth.classList.remove('bg-slate-900','text-white')
-    btnAuth.classList.add('bg-white','border')
-    // Klik na badge otevře profil
-    btnAuth.onclick = () => { location.hash = '#/m/020-muj-ucet' }
-  } else {
-    btnAuth.textContent = 'Přihlásit'
-    btnAuth.classList.add('bg-slate-900','text-white')
-    btnAuth.classList.remove('bg-white','border')
-    // Klik na „Přihlásit“ otevře dialog (handler nastaví initAuthUI)
-  }
-}
+  // Fallback: vytvoříme vlastní modál
+  const overlay = document.createElement('div')
+  overlay.id = 'authOverlay'
+  overlay.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,.4);
+    display:none; align-items:center; justify-content:center; z-index:9999;`
+  overlay.innerHTML = `
+    <div class="card p-4 w-full max-w-sm bg-white">
+      <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
+      <label class="block text-sm mb-2">Email</label>
+      <input id="authEmail" class="w-full border rounded p-2 mb-3" type="email" required />
+      <label class="block text-sm mb-2">Heslo</label>
+      <input id="authPass" class="w-full border rounded p-2 mb-4" type="password" minlength="6" required />
+      <div class="flex gap-2">
+        <button id="btnDoLogin"  class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
+        <button id="btnDoSignup" class="px-3 py-2 border rounded bg-white">Registrovat</button>
+        <button id="btnCloseAuth" class="ml-auto px-3 py-2 border rounded bg-white">Zavří
