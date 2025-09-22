@@ -95,7 +95,7 @@ window.addEventListener('hashchange', () => {
 })
 
 window.addEventListener('load', async () => {
-  initAuthUI()
+  initAuthUI(supabase))
 
   // vzhled (light/dark/gray)
   const themeMount = document.getElementById('themePicker')
@@ -106,7 +106,7 @@ window.addEventListener('load', async () => {
   if (tb) {
     tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
     const btn = document.getElementById('btnSignOut')
-    btn.onclick = signOut
+    btn.onclick = () => signOut(supabase)
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
 
