@@ -10,28 +10,17 @@ import { renderMainAction } from './ui/mainActionBtn.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
 
-console.log('main.js: loaded ok')
-
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+console.log('main.js loaded')
 
 // ---- ROUTER ----
 function parseRoute() {
-  // #/m/<mod>/t/<tile>  |  #/m/<mod>/f/<form>  |  #/dashboard
   const raw = (location.hash || '#/dashboard').slice(1)
   const seg = raw.split('/')
-  if (seg[0] !== 'm') return { type: 'root' } // dashboard
-  return {
-    type: 'module',
-    mod: seg[1],
-    kind: (seg[2] || 't'),   // 't' | 'f'
-    id: seg[3] || null,
-    params: new URLSearchParams(location.search),
-  }
+  if (seg[0] !== 'm') return { type: 'root' }
+  return { type:'module', mod:seg[1], kind:(seg[2]||'t'), id:seg[3]||null, params:new URLSearchParams(location.search) }
 }
-function syncModuleFromHash(){
-  const r = parseRoute()
-  setModule(r.type === 'module' ? r.mod : 'dashboard')
-}
+function syncModuleFromHash(){ const r = parseRoute(); setModule(r.type==='module' ? r.mod : 'dashboard') }
 
 // ---- RENDER ----
 async function renderContent(){
@@ -52,34 +41,24 @@ async function renderContent(){
   const modConf = MODULES.find(m => m.id === route.mod)
   if (!modConf) {
     bcEl.textContent = 'Hlavní panel'
-    content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     tilesEl.innerHTML = ''
     mainActEl.innerHTML = ''
+    content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     return
   }
 
-  // breadcrumbs
   bcEl.textContent = `Hlavní panel › ${modConf.title}`
-
-  // tiles (#3)
   tilesEl.innerHTML = (modConf.tiles || [])
-    .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`)
-    .join('')
+    .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`).join('')
 
-  // main action (#5)
   if (modConf.forms?.length) {
-    const firstForm = modConf.forms[0]
-    mainActEl.innerHTML = `
-      <a class="px-3 py-1 bg-slate-900 text-white rounded text-sm"
-         href="#/m/${modConf.id}/f/${firstForm.id}">+ ${firstForm.label}</a>`
-  } else {
-    mainActEl.innerHTML = ''
-  }
+    const f = modConf.forms[0]
+    mainActEl.innerHTML = `<a class="btn-primary text-sm" href="#/m/${modConf.id}/f/${f.id}">+ ${f.label}</a>`
+  } else mainActEl.innerHTML = ''
 
-  // modul – lazy import indexu a vykreslení
   const { renderModule } = await import(`./modules/${modConf.id}/index.js`)
   const kind = route.kind === 'f' ? 'form' : 'tile'
-  const id = route.id || (kind === 'tile' ? modConf.defaultTile : modConf.forms?.[0]?.id)
+  const id = route.id || (kind==='tile' ? modConf.defaultTile : modConf.forms?.[0]?.id)
   await renderModule(content, { kind, id, params: route.params })
 }
 
@@ -90,21 +69,17 @@ function renderChrome(){
 }
 
 // ---- EVENTS ----
-window.addEventListener('hashchange', () => {
-  syncModuleFromHash()
-  renderChrome()
-  renderContent()
-})
+window.addEventListener('hashchange', () => { syncModuleFromHash(); renderChrome(); renderContent() })
 
 window.addEventListener('load', async () => {
-  // AUTH UI – předáme klienta
+  // auth UI – klient předáváme
   initAuthUI(supabase)
 
-  // vzhled (light/dark/gray)
+  // vzhled (ponecháme, ale „Hustotu“ přesuneme později do Můj účet / Nastavení)
   const themeMount = document.getElementById('themePicker')
   if (themeMount) initThemeUI(themeMount)
 
-  // odhlásit (volitelné)
+  // volitelné Odhlásit
   const tb = document.getElementById('toolbar')
   if (tb) {
     tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
@@ -113,12 +88,11 @@ window.addEventListener('load', async () => {
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
 
-  // home-button + hlídání rozdělané práce
+  // home button
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
     if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
-    setUnsaved(false)
-    location.hash = '#/dashboard'
+    setUnsaved(false); location.hash = '#/dashboard'
   })
 
   syncModuleFromHash()
