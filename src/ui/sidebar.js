@@ -13,8 +13,7 @@ export function renderSidebar(el) {
   el.innerHTML = `
     <nav class="sidebar flex flex-col gap-1">
       ${MODULES.map(m => `
-        <a class="sidebar-link ${current === m.id ? 'active' : ''}"
-           href="#/m/${m.id}">
+        <a class="sidebar-link ${current === m.id ? 'active' : ''}" href="#/m/${m.id}">
           <span class="sidebar-icon">${m.icon || ''}</span>
           <span>${m.title}</span>
         </a>
