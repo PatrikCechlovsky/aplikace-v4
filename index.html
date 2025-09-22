@@ -50,21 +50,40 @@
   </main>
 
   <!-- Přihlašovací dialog (fallback řeší auth.js) -->
-  <dialog id="authDialog" class="rounded-xl p-0 w-full max-w-sm">
-    <form method="dialog" class="p-4 bg-white">
-      <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
-      <label class="block text-sm mb-2">Email</label>
-      <input id="authEmail" class="w-full border rounded p-2 mb-3" type="email" required />
-      <label class="block text-sm mb-2">Heslo</label>
-      <input id="authPass" class="w-full border rounded p-2 mb-4" type="password" minlength="6" required />
-      <div class="flex gap-2">
-        <button id="btnDoLogin" class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
-        <button id="btnDoSignup" class="px-3 py-2 border rounded bg-white">Registrovat</button>
-        <button id="btnCloseAuth" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
-      </div>
-      <p id="authMsg" class="text-sm text-slate-500 mt-3"></p>
-    </form>
-  </dialog>
+    <dialog id="authDialog" class="rounded-xl p-0 w-full max-w-sm">
+      <form method="dialog" class="p-4 bg-white" autocomplete="on">
+        <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
+    
+        <label class="block text-sm mb-2" for="authEmail">Email</label>
+        <input
+          id="authEmail"
+          name="email"
+          class="w-full border rounded p-2 mb-3"
+          type="email"
+          autocomplete="username email"
+          required
+        />
+    
+        <label class="block text-sm mb-2" for="authPass">Heslo</label>
+        <input
+          id="authPass"
+          name="current-password"
+          class="w-full border rounded p-2 mb-4"
+          type="password"
+          minlength="6"
+          autocomplete="current-password"
+          required
+        />
+    
+        <div class="flex gap-2">
+          <button id="btnDoLogin" class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
+          <button id="btnDoSignup" class="px-3 py-2 border rounded bg-white">Registrovat</button>
+          <button id="btnCloseAuth" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
+        </div>
+    
+        <p id="authMsg" class="text-sm text-slate-500 mt-3"></p>
+      </form>
+    </dialog>
 
   <script type="module" src="./src/main.js"></script>
 </body>
