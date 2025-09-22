@@ -11,7 +11,6 @@ export function applyTheme(theme) {
 export function initThemeUI(container) {
   const current = localStorage.getItem(KEY) || 'light';
   applyTheme(current);
-
   container.innerHTML = `
     <label class="text-xs mr-1">Vzhled</label>
     <select id="themeSelect" class="border rounded px-2 py-1 text-sm bg-white">
@@ -22,9 +21,5 @@ export function initThemeUI(container) {
 }
 
 function label(t) {
-  switch (t) {
-    case 'dark': return 'Tmavý';
-    case 'gray': return 'Šedý';
-    default: return 'Světlý';
-  }
+  switch (t) { case 'dark': return 'Tmavý'; case 'gray': return 'Šedý'; default: return 'Světlý'; }
 }
