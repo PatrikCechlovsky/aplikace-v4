@@ -14,15 +14,7 @@ export function renderSidebar(el) {
     <nav class="sidebar flex flex-col gap-1">
       ${MODULES.map(m => `
         <a class="sidebar-link ${current === m.id ? 'active' : ''}" href="#/m/${m.id}">
-          <span class="sidebar-icon">
-            <img
-              src="/docs/icons/${m.id}.svg"
-              alt=""
-              width="18" height="18"
-              style="display:inline-block; vertical-align:middle"
-              onerror="this.replaceWith(document.createTextNode('${(m.icon || '').replace(/'/g,'&#39;')}'))"
-            />
-          </span>
+          <span class="sidebar-icon">${m.icon || '📦'}</span>
           <span>${m.title}</span>
         </a>
       `).join('')}
