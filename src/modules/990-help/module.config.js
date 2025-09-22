@@ -1,6 +1,10 @@
-// Konfigurační soubor modulu Help
-module.exports = {
-  name: "Help",
-  code: "990-help",
-  description: "Modul pro nápovědu.",
-};
+export default {
+  id: '990-help',
+  title: 'Nápověda',
+  icon: '🆘',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'FAQ', icon: '❓' }
+  ],
+  forms: []
+}
