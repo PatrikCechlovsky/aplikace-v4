@@ -17,7 +17,7 @@ function parseRoute() {
   // #/m/<mod>/t/<tile>  |  #/m/<mod>/f/<form>  |  #/dashboard
   const raw = (location.hash || '#/dashboard').slice(1)
   const seg = raw.split('/')
-  if (seg[0] !== 'm') return { type:'root' } // dashboard
+  if (seg[0] !== 'm') return { type: 'root' } // dashboard
   return {
     type: 'module',
     mod: seg[1],
@@ -95,7 +95,8 @@ window.addEventListener('hashchange', () => {
 })
 
 window.addEventListener('load', async () => {
-  initAuthUI(supabase))
+  // AUTH UI – předáme klienta
+  initAuthUI(supabase)
 
   // vzhled (light/dark/gray)
   const themeMount = document.getElementById('themePicker')
