@@ -1,7 +1,4 @@
 // src/app/modules.index.js
-// Každý modul má ID = název složky. Ikonku bereme z ./docs/icons/<ID>.svg.
-// Když SVG nenajdeme, použijeme emoji fallback.
-
 import userMgmt     from '../modules/010-sprava-uzivatelu/module.config.js'
 import myAccount    from '../modules/020-muj-ucet/module.config.js'
 import pronajimatel from '../modules/030-pronajimatel/module.config.js'
@@ -18,7 +15,7 @@ import komunikace   from '../modules/130-komunikace/module.config.js'
 import nastaveni    from '../modules/900-nastaveni/module.config.js'
 import help         from '../modules/990-help/module.config.js'
 
-// emoji fallbacky (když pro modul chybí SVG v docs/icons)
+// fallback emoji, když chybí SVG v docs/icons/<ID>.svg
 const EMOJI = {
   '010-sprava-uzivatelu': '👥',
   '020-muj-ucet':         '👤',
@@ -37,13 +34,7 @@ const EMOJI = {
   '990-help':             '🆘',
 };
 
-// Pomůcka – doplní iconPath a emoji fallback.
-function withIcon(cfg) {
-  const id = cfg.id;
-  // očekáváme SVG v ./docs/icons/<ID>.svg (např. docs/icons/030-pronajimatel.svg)
-  const iconPath = `./docs/icons/${id}.svg`;
-  return { ...cfg, iconPath, icon: EMOJI[id] || '📦' };
-}
+const withIcon = (cfg) => ({ ...cfg, iconPath: `./docs/icons/${cfg.id}.svg`, icon: EMOJI[cfg.id] || '📦' });
 
 export const MODULES = [
   withIcon(userMgmt),
