@@ -1,18 +1,23 @@
-import config from './module.config.js'
-
-export async function renderModule(root, route) {
-  const kind = route?.kind || 'tile'
-  const id = route?.id || (kind==='tile' ? config.defaultTile : config.forms[0]?.id)
+export async function renderModule(root, { kind, id }) {
+  const card = (html) => `<div class="card p-4">${html}</div>`
   if (kind === 'tile') {
-    const tile = config.tiles.find(t => t.id === id) || config.tiles[0]
-    const mod = await tile.import()
-    await mod.render(root, route?.params || new URLSearchParams())
-  } else if (kind === 'form') {
-    const form = config.forms.find(f => f.id === id) || config.forms[0]
-    const mod = await form.import()
-    await mod.render(root, route?.params || new URLSearchParams())
-  } else {
-    root.innerHTML = `<div class="card p-4 text-sm">Neznámá část modulu.</div>`
+    if (id === 'prehled') return root.innerHTML = card('🏠 Přehled pronajímatelů – demo.')
+    if (id === 'seznam')  return root.innerHTML = card('📋 Seznam pronajímatelů – zde bude tabulka.')
+    return root.innerHTML = card('Neznámá dlaždice.')
   }
+  if (kind === 'form') {
+    if (id === 'novy') {
+      return root.innerHTML = card(`
+        <h3 class="font-semibold mb-3">➕ Nový pronajímatel</h3>
+        <div class="grid gap-3 max-w-md">
+          <input class="border rounded p-2" placeholder="Název / Jméno" />
+          <input class="border rounded p-2" placeholder="IČO (volitelně)" />
+          <input type="email" class="border rounded p-2" placeholder="Kontaktní e-mail" />
+          <button class="px-3 py-2 bg-slate-900 text-white rounded">Uložit (demo)</button>
+        </div>
+      `)
+    }
+    return root.innerHTML = card('Neznámý formulář.')
+  }
+  root.innerHTML = card('Neznámý typ.')
 }
-export function getConfig(){ return config }
