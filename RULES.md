@@ -37,3 +37,12 @@
     { id:'030-pronajimatel',title:'Pronajímatel',     icon:'🏠' },
     // …
   ]
+## Ikony modulů
+- Každý modul má SVG v `docs/icons/<ID>.svg` (např. `030-pronajimatel.svg`).
+- Pokud SVG chybí, použije se fallback emoji definovaný v `src/app/modules.index.js`.
+
+## Akce (tlačítka)
+- Centrální katalog akcí: `src/app/action-catalog.js` (odpovídá `docs/common-actions.md`).
+- Vykreslení tlačítka: `src/ui/actions.js` → `actionBtn('add'|'edit'|...)`.
+- V headeru a u kontextových akcí používat výhradně tento katalog.
+- Ikony akcí (volitelné SVG): `docs/icons/actions/<id>.svg`. Když chybí, použije se emoji fallback.
