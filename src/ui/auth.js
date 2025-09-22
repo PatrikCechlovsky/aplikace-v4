@@ -136,3 +136,17 @@ export async function signOut(supabase){
   try { await supabase.auth.signOut() }
   finally { await paintAuthBadge(supabase) }
 }
+export function hardResetAuth(supabase){
+  try {
+    // odhlásit
+    supabase.auth.signOut().catch(()=>{})
+    // smazat supabase session klíče
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-') && k.endsWith('-auth-token')) localStorage.removeItem(k)
+    })
+    // doplněk: naše vlastní klíče, pokud nějaké budeme mít
+    // localStorage.removeItem('app:theme') atd.
+  } finally {
+    location.reload()
+  }
+}
