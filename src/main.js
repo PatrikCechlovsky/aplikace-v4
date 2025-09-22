@@ -3,10 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 import { initAuthUI, signOut } from './ui/auth.js'
-import { initThemeUI } from './ui/theme.js'
 import { renderSidebar } from './ui/sidebar.js'
-import { renderHeaderActions } from './ui/headerActions.js'
-import { renderMainAction } from './ui/mainActionBtn.js'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
 
@@ -23,17 +20,35 @@ function parseRoute() {
 function syncModuleFromHash(){ const r=parseRoute(); setModule(r.type==='module'?r.mod:'dashboard') }
 
 // ---- RENDER ----
+function renderChrome(){
+  renderSidebar(document.getElementById('sidebar'))
+}
+
+function renderActionsBar(modConf){
+  const bar = document.getElementById('actions-bar')
+  if (!bar) return
+
+  // tiles → malé "chip" odkazy
+  const tiles = (modConf?.tiles || []).map(t =>
+    `<a class="chip tile px-3 py-1 text-sm" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`
+  )
+
+  // hlavní akce → "+ První formulář" jako primární mini tlačítko
+  const main = (modConf?.forms?.length)
+    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
+    : []
+
+  bar.innerHTML = [...tiles, ...main].join('')
+}
+
 async function renderContent(){
-  const route = parseRoute()
+  const route     = parseRoute()
   const content   = document.getElementById('content')
-  const tilesEl   = document.getElementById('module-tiles')
-  const mainActEl = document.getElementById('main-action-btn')
   const bcEl      = document.getElementById('breadcrumbs')
 
   if (route.type === 'root') {
     bcEl.textContent = 'Hlavní panel'
-    tilesEl.innerHTML = ''
-    mainActEl.innerHTML = ''
+    document.getElementById('actions-bar').innerHTML = ''
     content.innerHTML = `<div class="card p-8 text-sm muted">Dashboard – sem dáme 7 karet.</div>`
     return
   }
@@ -41,21 +56,13 @@ async function renderContent(){
   const modConf = MODULES.find(m => m.id === route.mod)
   if (!modConf) {
     bcEl.textContent = 'Hlavní panel'
-    tilesEl.innerHTML = ''
-    mainActEl.innerHTML = ''
+    document.getElementById('actions-bar').innerHTML = ''
     content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     return
   }
 
   bcEl.textContent = `Hlavní panel › ${modConf.title}`
-  tilesEl.innerHTML = (modConf.tiles || [])
-    .map(t => `<a class="tile" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`)
-    .join('')
-
-  if (modConf.forms?.length) {
-    const f = modConf.forms[0]
-    mainActEl.innerHTML = `<a class="btn-primary text-sm" href="#/m/${modConf.id}/f/${f.id}">+ ${f.label}</a>`
-  } else mainActEl.innerHTML = ''
+  renderActionsBar(modConf)
 
   const { renderModule } = await import(`./modules/${modConf.id}/index.js`)
   const kind = route.kind === 'f' ? 'form' : 'tile'
@@ -63,20 +70,17 @@ async function renderContent(){
   await renderModule(content, { kind, id, params: route.params })
 }
 
-function renderChrome(){
-  renderSidebar(document.getElementById('sidebar'))
-  renderHeaderActions(document.getElementById('header-actions'))
-  renderMainAction(document.getElementById('main-action-btn'))
-}
-
 // ---- EVENTS ----
 window.addEventListener('hashchange', () => { syncModuleFromHash(); renderChrome(); renderContent() })
 
 window.addEventListener('load', async () => {
-  initAuthUI(supabase)             // DŮLEŽITÉ: předáváme klienta
-  const themeMount = document.getElementById('themePicker')
-  if (themeMount) initThemeUI(themeMount)
+  initAuthUI(supabase)
 
+  // „Můj účet“ ikona
+  const btnAcc = document.getElementById('btnAccount')
+  if (btnAcc) btnAcc.onclick = () => { location.hash = '#/m/020-muj-ucet' }
+
+  // Odhlásit
   const tb = document.getElementById('toolbar')
   if (tb) {
     tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
@@ -85,6 +89,7 @@ window.addEventListener('load', async () => {
     supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
   }
 
+  // home button
   document.getElementById('home-button')?.addEventListener('click', () => {
     const st = getState()
     if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
