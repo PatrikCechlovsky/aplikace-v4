@@ -1,4 +1,5 @@
 // src/app/modules.index.js
+// Sem přidej 1 import pokaždé, když přibude modul
 import userMgmt     from '../modules/010-sprava-uzivatelu/module.config.js'
 import myAccount    from '../modules/020-muj-ucet/module.config.js'
 import pronajimatel from '../modules/030-pronajimatel/module.config.js'
@@ -15,41 +16,21 @@ import komunikace   from '../modules/130-komunikace/module.config.js'
 import nastaveni    from '../modules/900-nastaveni/module.config.js'
 import help         from '../modules/990-help/module.config.js'
 
-// fallback emoji, když chybí SVG v docs/icons/<ID>.svg
-const EMOJI = {
-  '010-sprava-uzivatelu': '👥',
-  '020-muj-ucet':         '👤',
-  '030-pronajimatel':     '🏠',
-  '040-nemovitost':       '🏢',
-  '050-najemnik':         '🧑‍🦱',
-  '060-smlouva':          '📄',
-  '070-sluzby':           '🛠️',
-  '080-platby':           '💰',
-  '090-finance':          '💸',
-  '100-energie':          '⚡',
-  '110-udrzba':           '🔧',
-  '120-dokumenty':        '📁',
-  '130-komunikace':       '📧',
-  '900-nastaveni':        '⚙️',
-  '990-help':             '🆘',
-};
-
-const withIcon = (cfg) => ({ ...cfg, iconPath: `./docs/icons/${cfg.id}.svg`, icon: EMOJI[cfg.id] || '📦' });
-
+// Export ve správném pořadí pro sidebar
 export const MODULES = [
-  withIcon(userMgmt),
-  withIcon(myAccount),
-  withIcon(pronajimatel),
-  withIcon(nemovitost),
-  withIcon(najemnik),
-  withIcon(smlouva),
-  withIcon(sluzby),
-  withIcon(platby),
-  withIcon(finance),
-  withIcon(energie),
-  withIcon(udrzba),
-  withIcon(dokumenty),
-  withIcon(komunikace),
-  withIcon(nastaveni),
-  withIcon(help),
-];
+  myAccount,
+  pronajimatel,
+  nemovitost,
+  najemnik,
+  smlouva,
+  sluzby,
+  platby,
+  finance,
+  energie,
+  udrzba,
+  dokumenty,
+  komunikace,
+  nastaveni,
+  help,
+  userMgmt, // klidně přesuň, kam chceš
+]
