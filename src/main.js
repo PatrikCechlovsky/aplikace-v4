@@ -47,7 +47,6 @@ function renderBreadcrumbs (modConf, item, kind) {
   if (!bc) return
   if (!modConf) { bc.innerHTML = ''; return }
 
-  // pouze emoji/text – žádné SVG
   const sep = `<span class="mx-2 text-slate-300">/</span>`
   const mod = `<span class="inline-flex items-center gap-1">${modConf.icon || ''} ${modConf.title}</span>`
   const it  = item ? `<span class="inline-flex items-center gap-1">${item.icon || ''} ${item.label}</span>` : ''
