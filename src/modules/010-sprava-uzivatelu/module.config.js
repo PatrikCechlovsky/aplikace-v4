@@ -1,6 +1,13 @@
-// Konfigurační soubor modulu Správa uživatelů
-module.exports = {
-  name: "Správa uživatelů",
-  code: "010-sprava-uzivatelu",
-  description: "Modul pro správu uživatelů systému.",
-};
+export default {
+  id: '010-sprava-uzivatelu',
+  title: 'Správa uživatelů',
+  icon: '👥',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' },
+  ],
+  forms: [
+    { id: 'novy',    label: 'Nový uživatel', icon: '➕' }
+  ]
+}
