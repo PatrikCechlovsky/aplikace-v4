@@ -7,12 +7,13 @@ export function renderSidebar(root){
   root.innerHTML = `
     <nav class="sidebar">
       ${MODULES.map(m => `
-        <a href="#/m/${m.id}" class="${cur===m.id?'active':''}">
+        <a href="#/m/${m.id}" class="${cur===m.id ? 'active' : ''}">
           ${m.iconPath
             ? `<img src="${m.iconPath}" alt="" class="icon-16" />`
             : `<span>${m.icon || '📦'}</span>`}
           <span>${m.title}</span>
-        </a>`).join('')}
+        </a>
+      `).join('')}
     </nav>
   `
 }
