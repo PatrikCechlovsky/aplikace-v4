@@ -21,3 +21,22 @@ export function renderSidebar(el) {
     </nav>
   `
 }
+export function renderSidebar(el) {
+  if (!el) return
+  const current = activeModFromHash()
+
+  // DEBUG: ukaž, co jde do sidebaru
+  console.log('MODULES:', MODULES.map(m => m.id))
+
+  el.innerHTML = `
+    <nav class="sidebar flex flex-col gap-1">
+      ${MODULES.map(m => `
+        <a class="sidebar-link ${current === m.id ? 'active' : ''}" href="#/m/${m.id}">
+          <span class="sidebar-icon">${m.icon || ''}</span>
+          <span>${m.title}</span>
+        </a>
+      `).join('')}
+    </nav>
+  `
+}
+
