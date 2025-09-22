@@ -1,6 +1,6 @@
 // SEM přidáš 1 řádek, když přibude modul
-import userMgmt from '../modules/010-user-mgmt/module.config.js'
-import myAccount from '../modules/020-my-account/module.config.js'
+import userMgmt from '../modules/010-sprava-uzivatelu/module.config.js'
+import myAccount from '../modules/020-muj-ucet/module.config.js'
 import pronajimatel from '../modules/030-pronajimatel/module.config.js'
 import nemovitost from '../modules/040-nemovitost/module.config.js'
 import najemnik from '../modules/050-najemnik/module.config.js'
