@@ -1,12 +1,13 @@
 export default {
   id: '030-pronajimatel',
-  title: 'Pronajímatel',
+  title: 'Pronajímatelé',
   icon: '🏠',
-  defaultTile: 'list',
+  defaultTile: 'prehled',
   tiles: [
-    { id: 'list',   label: 'Seznam', icon: '📋', import: () => import('./tiles/list.js') },
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' },
   ],
   forms: [
-    { id: 'create', label: 'Nový',   icon: '➕', import: () => import('./forms/create.js') },
+    { id: 'novy',    label: 'Nový pronajímatel', icon: '➕' }
   ]
 }
