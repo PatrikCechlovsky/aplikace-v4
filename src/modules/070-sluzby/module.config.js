@@ -1,6 +1,13 @@
-// Konfigurační soubor modulu Služby
-module.exports = {
-  name: "Služby",
-  code: "070-sluzby",
-  description: "Modul pro správu služeb.",
-};
+export default {
+  id: '070-sluzby',
+  title: 'Služby',
+  icon: '🛠️',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' },
+  ],
+  forms: [
+    { id: 'novy', label: 'Nová služba', icon: '➕' }
+  ]
+}
