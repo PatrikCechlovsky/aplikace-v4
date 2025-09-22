@@ -1,14 +1,10 @@
-// src/ui/auth.js
-// Přihlašovací UI: funguje s <dialog> z index.html; když dialog chybí,
-// vytvoří fallback overlay. Vše je s robustním zobrazením chyb a odemykáním tlačítek.
-
+// src/ui/auth.js  — robustní login s diagnostikou + timeoutem
 function $(id){ return document.getElementById(id) }
 
 function ensureDialog(){
   let dlg = $('authDialog')
   if (dlg) return dlg
-
-  // fallback overlay (kdyby <dialog> nebyl)
+  // fallback overlay, pokud <dialog> chybí
   const overlay = document.createElement('div')
   overlay.id = 'authOverlay'
   overlay.style.cssText = `
@@ -35,47 +31,24 @@ function ensureDialog(){
   }
   return overlay
 }
+function openDlg(dlg){ dlg.tagName==='DIALOG' ? (dlg.showModal?dlg.showModal():dlg.setAttribute('open','')) : dlg.__api.showModal() }
+function closeDlg(dlg){ dlg.tagName==='DIALOG' ? (dlg.close?dlg.close():dlg.removeAttribute('open')) : dlg.__api.close() }
 
-function openDlg(dlg){
-  if (dlg.tagName === 'DIALOG') {
-    if (typeof dlg.showModal === 'function') dlg.showModal()
-    else dlg.setAttribute('open','')
-  } else {
-    dlg.__api.showModal()
-  }
-}
-function closeDlg(dlg){
-  if (dlg.tagName === 'DIALOG') {
-    if (typeof dlg.close === 'function') dlg.close()
-    else dlg.removeAttribute('open')
-  } else {
-    dlg.__api.close()
-  }
-}
-
-function setBusy(el, busy, textWhenBusy){
-  if (!el) return
+function setBusy(btn, busy, labelBusy){
+  if (!btn) return
   if (busy){
-    el.dataset._label = el.textContent
-    el.disabled = true
-    if (textWhenBusy) el.textContent = textWhenBusy
+    btn.dataset._label = btn.textContent
+    btn.disabled = true
+    if (labelBusy) btn.textContent = labelBusy
   } else {
-    el.disabled = false
-    if (el.dataset._label) el.textContent = el.dataset._label
-    delete el.dataset._label
+    btn.disabled = false
+    if (btn.dataset._label){ btn.textContent = btn.dataset._label; delete btn.dataset._label }
   }
 }
 
 async function showAuthBadge(supabase){
-  const btnAuth = $('btnAuth')
-  if (!btnAuth) return
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error){
-    btnAuth.textContent = 'Přihlásit'
-    btnAuth.classList.add('bg-slate-900','text-white')
-    btnAuth.classList.remove('bg-white','border')
-    return
-  }
+  const btnAuth = $('btnAuth'); if (!btnAuth) return
+  const { data: { user } } = await supabase.auth.getUser().catch(()=>({data:{user:null}}))
   if (user){
     btnAuth.textContent = user.email || 'Přihlášen'
     btnAuth.classList.remove('bg-slate-900','text-white')
@@ -88,9 +61,25 @@ async function showAuthBadge(supabase){
   }
 }
 
+function timeout(ms, message='Časový limit vypršel'){
+  return new Promise((_, rej) => setTimeout(()=>rej(new Error(message)), ms))
+}
+
+async function checkAuthSettings(SUPABASE_URL){
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { accept: 'application/json' } })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const json = await res.json()
+    // očekáváme json.email.password.signupEnabled (v současných verzích existuje info o password providerech)
+    return json
+  } catch (e) {
+    return null // když se nepovede, neblokujeme login, jen nemáme nápovědu
+  }
+}
+
 export function initAuthUI(supabase){
-  const dlg  = ensureDialog()
-  const msg  = $('authMsg')
+  const dlg = ensureDialog()
+  const msg = $('authMsg')
   const btnAuth   = $('btnAuth')
   const btnLogin  = $('btnDoLogin')
   const btnSignup = $('btnDoSignup')
@@ -98,58 +87,84 @@ export function initAuthUI(supabase){
   const inpEmail  = $('authEmail')
   const inpPass   = $('authPass')
 
-  if (!btnAuth || !btnLogin || !btnSignup || !btnClose || !inpEmail || !inpPass) {
-    console.warn('auth UI: některé prvky chybí v DOM')
-    return
-  }
+  if (!btnAuth || !btnLogin || !btnSignup || !btnClose || !inpEmail || !inpPass) return
 
-  // otevřít dialog
-  btnAuth.onclick = () => {
-    msg.textContent = ''
-    inpEmail.value = ''
-    inpPass.value = ''
-    openDlg(dlg)
-  }
-
-  // zavřít dialog
+  btnAuth.onclick = () => { msg.textContent=''; inpEmail.value=''; inpPass.value=''; openDlg(dlg) }
   btnClose.onclick = (e) => { e.preventDefault(); closeDlg(dlg) }
 
-  // LOGIN
   btnLogin.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Přihlašuji…'
     setBusy(btnLogin, true, 'Přihlašuji…')
+
+    // paralelně načteme auth settings + spustíme samotný login s timeoutem
+    const SUPABASE_URL = (await import('../supabase.js')).SUPABASE_URL
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: (inpEmail.value || '').trim(),
-        password: inpPass.value || ''
-      })
+      const [settings, _] = await Promise.all([
+        checkAuthSettings(SUPABASE_URL),
+        Promise.race([
+          supabase.auth.signInWithPassword({
+            email: (inpEmail.value||'').trim(),
+            password: inpPass.value||''
+          }),
+          timeout(10000, 'Spojení se serverem trvá příliš dlouho (síť/CORS?).')
+        ])
+      ])
+
+      // pokud se vrátí výsledek z signInWithPassword, bude to objekt { data, error }
+      const { data, error } = await supabase.auth.getSession() // ověříme reálně stav po volání
       if (error) throw error
+      if (!data?.session) {
+        // přihlášení se neprovedlo – zkusíme vypsat chybovou hlášku z posledního volání
+        const last = await supabase.auth.getUser()
+        // nic extra nezjistíme – dáme obecnou hlášku
+        throw new Error('Přihlášení se nezdařilo. Zkontroluj email/heslo a potvrzení účtu.')
+      }
+
+      // úspěch
       msg.textContent = 'Přihlášeno.'
       closeDlg(dlg)
       await showAuthBadge(supabase)
-      console.log('login OK', data?.user?.id)
+      console.log('login OK', data.session.user?.id)
+
+      // bonus: nápověda – kdyby měl user problém, ukážeme info o povoleném password loginu
+      if (settings && settings.EMAIL && settings.EMAIL.PASSWORD && settings.EMAIL.PASSWORD.ENABLED === false){
+        console.warn('V Supabase máš vypnuté heslové přihlášení (Password).')
+      }
+
     } catch (err){
       console.error('login error', err)
-      msg.textContent = 'Chyba přihlášení: ' + (err?.message || 'Neznámá chyba')
+      // známé texty
+      const t = String(err?.message || '')
+      if (t.includes('Email not confirmed') || t.includes('email_not_confirmed')){
+        msg.textContent = 'Účet není potvrzený. Ověř prosím odkaz v e-mailu.'
+      } else if (t.includes('Invalid login credentials') || t.includes('invalid_credentials')){
+        msg.textContent = 'Neplatné přihlašovací údaje. Zkus to prosím znovu.'
+      } else if (t.includes('FetchError') || t.includes('CORS') || t.includes('network')){
+        msg.textContent = 'Nelze kontaktovat Supabase (síť/CORS). Zkontroluj URL a povolené domény.'
+      } else if (t.includes('trvá příliš dlouho')){
+        msg.textContent = 'Spojení se serverem vypršelo. Možné blokování sítě/CORS.'
+      } else {
+        msg.textContent = 'Chyba přihlášení: ' + (t || 'Neznámá chyba')
+      }
     } finally {
       setBusy(btnLogin, false)
     }
   }
 
-  // REGISTRACE
   btnSignup.onclick = async (e) => {
     e.preventDefault()
     msg.textContent = 'Zakládám účet…'
     setBusy(btnSignup, true, 'Zakládám…')
     try {
       const { error } = await supabase.auth.signUp({
-        email: (inpEmail.value || '').trim(),
-        password: inpPass.value || '',
+        email: (inpEmail.value||'').trim(),
+        password: inpPass.value||'',
         options: { emailRedirectTo: location.origin + '/#/m/020-muj-ucet' }
       })
       if (error) throw error
-      msg.textContent = 'Hotovo. Zkontroluj email a potvrď registraci.'
+      msg.textContent = 'Hotovo. Zkontroluj prosím e-mail a potvrď registraci.'
     } catch (err){
       console.error('signup error', err)
       msg.textContent = 'Chyba registrace: ' + (err?.message || 'Neznámá chyba')
@@ -158,7 +173,6 @@ export function initAuthUI(supabase){
     }
   }
 
-  // Badge a tlačítko Odhlásit reagují na změny
   supabase.auth.onAuthStateChange(() => showAuthBadge(supabase))
   showAuthBadge(supabase)
 }
