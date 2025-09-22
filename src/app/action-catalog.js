@@ -1,39 +1,37 @@
 // src/app/action-catalog.js
-// Ikony: preferujeme SVG z docs/icons/actions/<id>.svg, jinak emoji fallback.
-const F = (id, label, emoji) => ({
-  id, label,
-  iconPath: `./docs/icons/actions/${id}.svg`,
-  emoji
-});
+// Centrální katalog akcí s emoji ikonami (bez načítání SVG)
 
-export const ACTIONS = [
-  F('add',        'Přidat',               '➕'),
-  F('edit',       'Upravit',              '✏️'),
-  F('detail',     'Detail',               '👁️'),
-  F('archive',    'Archivovat',           '🗄️'),
-  F('block',      'Zablokovat',           '⛔'),
-  F('reset-pass', 'Reset hesla',          '🔁'),
-  F('invite',     'Poslat pozvánku',      '📨'),
-  F('audit',      'Historie aktivit',     '🧑‍💻'),
-  F('attachments','Dokumenty',            '📑'),
-  F('perms',      'Oprávnění',            '✳️'),
-  F('delete',     'Smazat',               '🗑️'),
-  F('export',     'Export',               '📤'),
-  F('import',     'Import',               '📥'),
-  F('print',      'Tisk',                 '🖨️'),
-  F('filter',     'Filtry',               '🔍'),
-  F('stats',      'Statistiky',           '📊'),
-  F('remind',     'Upomínka',             '📨'),
-  F('notify',     'Notifikace',           '🔔'),
-  F('sign',       'Podepsat',             '🖋️'),
-  F('approve',    'Schválit',             '✔️'),
-  F('reject',     'Zamítnout',            '❌'),
-  F('note',       'Poznámka',             '📝'),
-  F('help',       'Nápověda',             '🆘'),
-  F('lang',       'Jazyk',                '🌐'),
-  F('reset',      'Reset nastavení',      '🔄'),
-  F('info',       'Info',                 'ℹ️'),
-  F('comment',    'Komentář',             '💬'),
-];
+const make = (id, label, emoji) => ({
+  id,
+  label,
+  icon: emoji,   // <- jediné, co UI používá
+  iconPath: null // <- necháme pro kompatibilitu, ale nepoužívá se
+})
 
-export function getAction(id){ return ACTIONS.find(a => a.id === id); }
+// Sem dávej společné akce, které se opakují napříč moduly
+export const ACTIONS = {
+  add:       make('add',       'Přidat',        '➕'),
+  edit:      make('edit',      'Upravit',       '✏️'),
+  detail:    make('detail',    'Detail',        '👁️'),
+  archive:   make('archive',   'Archivovat',    '🗄️'),
+  block:     make('block',     'Zablokovat',    '⛔'),
+  resetPwd:  make('resetPwd',  'Resetovat heslo','🔁'),
+  invite:    make('invite',    'Poslat pozvánku','📨'),
+  docs:      make('docs',      'Dokumenty',     '📑'),
+  perms:     make('perms',     'Oprávnění',     '✳️'),
+  remove:    make('remove',    'Smazat',        '🗑️'),
+  export:    make('export',    'Export',        '📤'),
+  import:    make('import',    'Import',        '📥'),
+  print:     make('print',     'Tisk',          '🖨️'),
+  filter:    make('filter',    'Filtr',         '🔍'),
+  stats:     make('stats',     'Statistiky',    '📊'),
+  reminder:  make('reminder',  'Upomínka',      '📨'),
+  notify:    make('notify',    'Notifikace',    '🔔'),
+  sign:      make('sign',      'Podepsat',      '🖋️'),
+  approve:   make('approve',   'Schválit',      '✔️'),
+  reject:    make('reject',    'Zamítnout',     '❌'),
+  note:      make('note',      'Poznámka',      '📝'),
+  help:      make('help',      'Nápověda',      '🆘'),
+}
+
+export default ACTIONS
