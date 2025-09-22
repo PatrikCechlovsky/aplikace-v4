@@ -1,3 +1,3 @@
 // supabase.js
-export const SUPABASE_URL = "REPLACE_ME_URL";
-export const SUPABASE_ANON_KEY = "REPLACE_ME_ANON_KEY";
+export const SUPABASE_URL = "https://jgqgfbuagoypladyjjfl.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpncWdmYnVhZ295cGxhZHlqamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MTA3MTcsImV4cCI6MjA3NDA4NjcxN30.O5vvOyiYlIJb_bxaBbYF8Sn9sm2ReB7vDgASVm3dT3g";
