@@ -1,18 +1,18 @@
 // src/ui/auth.js
-// Přihlašovací UI – funguje s <dialog>, ale pokud chybí/nefunguje,
-// vytvoří a použije vlastní overlay (fallback). Předávej supabase klient.
+// Přihlašovací UI: funguje s <dialog> z index.html; když dialog chybí,
+// vytvoří fallback overlay. Vše je s robustním zobrazením chyb a odemykáním tlačítek.
 
-function el(id){ return document.getElementById(id) }
+function $(id){ return document.getElementById(id) }
 
-function ensureDialogExists(){
-  let dlg = el('authDialog')
+function ensureDialog(){
+  let dlg = $('authDialog')
   if (dlg) return dlg
 
-  // Fallback: vytvoříme vlastní modál
+  // fallback overlay (kdyby <dialog> nebyl)
   const overlay = document.createElement('div')
   overlay.id = 'authOverlay'
   overlay.style.cssText = `
-    position:fixed; inset:0; background:rgba(0,0,0,.4);
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
     display:none; align-items:center; justify-content:center; z-index:9999;`
   overlay.innerHTML = `
     <div class="card p-4 w-full max-w-sm bg-white">
@@ -29,113 +29,54 @@ function ensureDialogExists(){
       <p id="authMsg" class="text-sm text-slate-500 mt-3"></p>
     </div>`
   document.body.appendChild(overlay)
-
-  // vytvoříme API, které vypadá podobně jako <dialog>
-  const api = {
-    open: false,
-    showModal(){ overlay.style.display = 'flex'; this.open = true },
-    close(){ overlay.style.display = 'none'; this.open = false }
+  overlay.__api = {
+    showModal(){ overlay.style.display = 'flex' },
+    close(){ overlay.style.display = 'none' }
   }
-  overlay.__api = api
-  return overlay // vracíme element (overlay) místo <dialog>
+  return overlay
 }
 
-function openDialog(dlg){
-  // <dialog> nativní
+function openDlg(dlg){
   if (dlg.tagName === 'DIALOG') {
     if (typeof dlg.showModal === 'function') dlg.showModal()
     else dlg.setAttribute('open','')
-    return
+  } else {
+    dlg.__api.showModal()
   }
-  // fallback overlay
-  dlg.__api?.showModal()
 }
-
-function closeDialog(dlg){
+function closeDlg(dlg){
   if (dlg.tagName === 'DIALOG') {
     if (typeof dlg.close === 'function') dlg.close()
     else dlg.removeAttribute('open')
+  } else {
+    dlg.__api.close()
+  }
+}
+
+function setBusy(el, busy, textWhenBusy){
+  if (!el) return
+  if (busy){
+    el.dataset._label = el.textContent
+    el.disabled = true
+    if (textWhenBusy) el.textContent = textWhenBusy
+  } else {
+    el.disabled = false
+    if (el.dataset._label) el.textContent = el.dataset._label
+    delete el.dataset._label
+  }
+}
+
+async function showAuthBadge(supabase){
+  const btnAuth = $('btnAuth')
+  if (!btnAuth) return
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error){
+    btnAuth.textContent = 'Přihlásit'
+    btnAuth.classList.add('bg-slate-900','text-white')
+    btnAuth.classList.remove('bg-white','border')
     return
   }
-  dlg.__api?.close()
-}
-
-export function initAuthUI(supabase){
-  const btnAuth  = el('btnAuth')
-  const dlg      = ensureDialogExists()
-  const inpEmail = el('authEmail')
-  const inpPass  = el('authPass')
-  const btnLogin = el('btnDoLogin')
-  const btnSign  = el('btnDoSignup')
-  const btnClose = el('btnCloseAuth')
-  const msg      = el('authMsg')
-
-  if (!btnAuth || !dlg || !btnLogin || !btnSign || !btnClose) return
-
-  // Otevření dialogu
-  btnAuth.onclick = () => {
-    inpEmail.value = ''
-    inpPass.value = ''
-    msg.textContent = ''
-    openDialog(dlg)
-  }
-
-  // Zavření dialogu
-  btnClose.onclick = (e) => { e.preventDefault(); closeDialog(dlg) }
-
-  // Login
-  btnLogin.onclick = async (e) => {
-    e.preventDefault()
-    msg.textContent = 'Přihlašuji…'
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: inpEmail.value.trim(),
-        password: inpPass.value
-      })
-      if (error) throw error
-      msg.textContent = 'OK, přihlášeno.'
-      closeDialog(dlg)
-      renderAuthBadge(supabase)
-    } catch (err) {
-      msg.textContent = 'Chyba: ' + (err?.message || 'Přihlášení se nezdařilo')
-    }
-  }
-
-  // Registrace
-  btnSign.onclick = async (e) => {
-    e.preventDefault()
-    msg.textContent = 'Zakládám účet…'
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: inpEmail.value.trim(),
-        password: inpPass.value,
-        options: { emailRedirectTo: location.origin + '/#/m/020-muj-ucet' }
-      })
-      if (error) throw error
-      msg.textContent = 'Hotovo. Zkontroluj e-mail a potvrď registraci.'
-    } catch (err) {
-      msg.textContent = 'Chyba: ' + (err?.message || 'Registrace se nezdařila')
-    }
-  }
-
-  // Reakce na změny přihlášení
-  supabase.auth.onAuthStateChange(() => renderAuthBadge(supabase))
-
-  // Nastav badge při načtení
-  renderAuthBadge(supabase)
-}
-
-export async function signOut(supabase){
-  await supabase.auth.signOut()
-  renderAuthBadge(supabase)
-}
-
-async function renderAuthBadge(supabase){
-  const btnAuth = el('btnAuth')
-  if (!btnAuth) return
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user) {
+  if (user){
     btnAuth.textContent = user.email || 'Přihlášen'
     btnAuth.classList.remove('bg-slate-900','text-white')
     btnAuth.classList.add('bg-white','border')
@@ -144,6 +85,85 @@ async function renderAuthBadge(supabase){
     btnAuth.textContent = 'Přihlásit'
     btnAuth.classList.add('bg-slate-900','text-white')
     btnAuth.classList.remove('bg-white','border')
-    // onclick se nastaví v initAuthUI
   }
+}
+
+export function initAuthUI(supabase){
+  const dlg  = ensureDialog()
+  const msg  = $('authMsg')
+  const btnAuth   = $('btnAuth')
+  const btnLogin  = $('btnDoLogin')
+  const btnSignup = $('btnDoSignup')
+  const btnClose  = $('btnCloseAuth')
+  const inpEmail  = $('authEmail')
+  const inpPass   = $('authPass')
+
+  if (!btnAuth || !btnLogin || !btnSignup || !btnClose || !inpEmail || !inpPass) {
+    console.warn('auth UI: některé prvky chybí v DOM')
+    return
+  }
+
+  // otevřít dialog
+  btnAuth.onclick = () => {
+    msg.textContent = ''
+    inpEmail.value = ''
+    inpPass.value = ''
+    openDlg(dlg)
+  }
+
+  // zavřít dialog
+  btnClose.onclick = (e) => { e.preventDefault(); closeDlg(dlg) }
+
+  // LOGIN
+  btnLogin.onclick = async (e) => {
+    e.preventDefault()
+    msg.textContent = 'Přihlašuji…'
+    setBusy(btnLogin, true, 'Přihlašuji…')
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: (inpEmail.value || '').trim(),
+        password: inpPass.value || ''
+      })
+      if (error) throw error
+      msg.textContent = 'Přihlášeno.'
+      closeDlg(dlg)
+      await showAuthBadge(supabase)
+      console.log('login OK', data?.user?.id)
+    } catch (err){
+      console.error('login error', err)
+      msg.textContent = 'Chyba přihlášení: ' + (err?.message || 'Neznámá chyba')
+    } finally {
+      setBusy(btnLogin, false)
+    }
+  }
+
+  // REGISTRACE
+  btnSignup.onclick = async (e) => {
+    e.preventDefault()
+    msg.textContent = 'Zakládám účet…'
+    setBusy(btnSignup, true, 'Zakládám…')
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: (inpEmail.value || '').trim(),
+        password: inpPass.value || '',
+        options: { emailRedirectTo: location.origin + '/#/m/020-muj-ucet' }
+      })
+      if (error) throw error
+      msg.textContent = 'Hotovo. Zkontroluj email a potvrď registraci.'
+    } catch (err){
+      console.error('signup error', err)
+      msg.textContent = 'Chyba registrace: ' + (err?.message || 'Neznámá chyba')
+    } finally {
+      setBusy(btnSignup, false)
+    }
+  }
+
+  // Badge a tlačítko Odhlásit reagují na změny
+  supabase.auth.onAuthStateChange(() => showAuthBadge(supabase))
+  showAuthBadge(supabase)
+}
+
+export async function signOut(supabase){
+  try { await supabase.auth.signOut() }
+  finally { await showAuthBadge(supabase) }
 }
