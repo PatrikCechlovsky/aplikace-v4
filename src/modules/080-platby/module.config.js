@@ -1,6 +1,13 @@
-// Konfigurační soubor modulu Platby
-module.exports = {
-  name: "Platby",
-  code: "080-platby",
-  description: "Modul pro správu plateb.",
-};
+export default {
+  id: '080-platby',
+  title: 'Platby',
+  icon: '💰',
+  defaultTile: 'prehled',
+  tiles: [
+    { id: 'prehled', label: 'Přehled', icon: '📊' },
+    { id: 'seznam',  label: 'Seznam',  icon: '📋' },
+  ],
+  forms: [
+    { id: 'prijem', label: 'Nový příjem', icon: '➕' }
+  ]
+}
