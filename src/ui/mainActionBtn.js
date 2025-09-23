@@ -1,15 +1,19 @@
 // src/ui/mainActionBtn.js
-import { MODULES } from '../app/modules.index.js'
-import { getState } from '../app/state.js'
+export function renderMainAction(root, { mod, kind }){
+  if (!root || !mod) return
+  const forms = mod.forms || []
+  if (!forms.length) return
 
-export function renderMainAction(root){
-  const cur = getState().current
-  const mod = MODULES.find(m => m.id === cur)
-  if (!mod || !mod.forms?.length) { root.innerHTML = ''; return }
-  const firstForm = mod.forms[0]
-  root.innerHTML = `
-    <a href="#/m/${mod.id}/f/${firstForm.id}"
-       class="px-3 py-1 bg-slate-900 text-white rounded text-sm">
-       + ${firstForm.label}
-    </a>`
+  const btns = forms.map(f => `
+    <a class="px-3 py-2 rounded bg-slate-900 text-white text-sm"
+       href="#/m/${mod.id}/f/${f.id}">
+       ${f.icon || '➕'} ${f.label}
+    </a>
+  `).join('')
+
+  // přidáme vpravo za tiles (nepřepisujeme)
+  const holder = document.createElement('div')
+  holder.className = 'ml-2 flex gap-2'
+  holder.innerHTML = btns
+  root.appendChild(holder)
 }
