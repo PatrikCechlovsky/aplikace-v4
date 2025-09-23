@@ -18,6 +18,7 @@ import help         from '../modules/990-help/module.config.js'
 
 // Export ve správném pořadí pro sidebar
 export const MODULES = [
+  userMgmt, // klidně přesuň, kam chceš
   myAccount,
   pronajimatel,
   nemovitost,
@@ -32,5 +33,4 @@ export const MODULES = [
   komunikace,
   nastaveni,
   help,
-  userMgmt, // klidně přesuň, kam chceš
 ]
