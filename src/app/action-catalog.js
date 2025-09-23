@@ -34,3 +34,4 @@ export const ACTIONS = {
 }
 
 export default ACTIONS
++export const getAction = (id) => ACTIONS[id]
