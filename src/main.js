@@ -2,162 +2,88 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-import { initAuthUI, signOut } from './ui/auth.js'
-import { renderSidebar } from './ui/sidebar.js'
 import { MODULES } from './app/modules.index.js'
-import { getState, setModule, setUnsaved } from './app/state.js'
+import { renderSidebar } from './ui/sidebar.js'
+import { renderBreadcrumbs } from './ui/breadcrumbs.js'
+import { renderTiles } from './ui/tiles.js'
+import { renderMainAction } from './ui/mainActionBtn.js'
+import { initAuthUI } from './ui/auth.js'
+import { initThemeUI } from './ui/theme.js'
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  }
-})
-// ---- ROUTER ----
-function parseRoute() {
-  const raw = (location.hash || '#/dashboard').slice(1)
-  const seg = raw.split('/')
-  if (seg[0] !== 'm') return { type: 'root' }
-  return { type: 'module', mod: seg[1], kind: (seg[2] || 't'), id: seg[3] || null, params: new URLSearchParams(location.search) }
-}
-function syncModuleFromHash () {
-  const r = parseRoute()
-  setModule(r.type === 'module' ? r.mod : 'dashboard')
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// ---- UI helpers ----
-function renderChrome () {
-  renderSidebar(document.getElementById('sidebar'))
-}
+const $ = (id) => document.getElementById(id)
+const findModule = (id) => MODULES.find(m => m.id === id)
 
-- function renderActionsBar (modConf) {
-+ function renderActionsBar (modConf, actions = []) {
-   const bar = document.getElementById('actions-bar')
-   if (!bar) return
-   if (!modConf) { bar.innerHTML = ''; return }
-
-   const tiles = (modConf.tiles || []).map(t =>
-     `<a class="chip tile px-3 py-1 text-sm" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`
-   )
--  const main = (modConf.forms?.length)
--    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
--    : []
--
--  bar.innerHTML = [...tiles, ...main].join('')
-+  // “globální” + tlačítko z module.config (zůstává – fallback)
-+  const defaultMain = (modConf.forms?.length)
-+    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
-+    : []
-+  // akce z aktuální dlaždice/formuláře (přijdou z modulu)
-+  const dynamic = actions.map(a => {
-+    const icon = a.icon || '🔘'
-+    const label = a.label || 'Akce'
-+    return a.href
-+      ? `<a class="btn-primary text-sm px-3 py-1" href="${a.href}">${icon} ${label}</a>`
-+      : `<button class="btn-primary text-sm px-3 py-1" data-action="${a.id||''}">${icon} ${label}</button>`
-+  })
-+  bar.innerHTML = [...tiles, ...defaultMain, ...dynamic].join('')
- }
-
-
-function renderBreadcrumbs (modConf, item, kind) {
-  const bc = document.getElementById('breadcrumbs')
-  if (!bc) return
-  if (!modConf) { bc.innerHTML = ''; return }
-
-  const sep = `<span class="mx-2 text-slate-300">/</span>`
-  const mod = `<span class="inline-flex items-center gap-1">${modConf.icon || ''} ${modConf.title}</span>`
-  const it  = item ? `<span class="inline-flex items-center gap-1">${item.icon || ''} ${item.label}</span>` : ''
-
-  bc.innerHTML = it ? `${mod} ${sep} ${it}` : mod
+function parseHash() {
+  const raw = (location.hash || '').replace(/^#\/?/, '')
+  const [path, q] = raw.split('?')
+  const parts = (path || '').split('/').filter(Boolean)
+  const params = new URLSearchParams(q || '')
+  if (parts[0] !== 'm') return { view: 'dashboard', params }
+  const mod = parts[1]
+  if (!mod) return { view: 'dashboard', params }
+  if (parts[2] === 't' && parts[3]) return { view:'module', mod, kind:'tile', id:parts[3], params }
+  if (parts[2] === 'f' && parts[3]) return { view:'module', mod, kind:'form', id:parts[3], params }
+  return { view:'module', mod, kind:'tile', id:null, params }
 }
 
-// ---- CONTENT ----
-async function renderContent () {
-  const route   = parseRoute()
-  const content = document.getElementById('content')
+async function loadModule(modId){
+  return await import(`./modules/${modId}/index.js`)
+}
 
-  if (route.type === 'root') {
-    document.getElementById('breadcrumbs').innerHTML = ''      // žádné drobečky na dashboardu
-    document.getElementById('actions-bar').innerHTML = ''      // žádné akce
-    content.innerHTML = `<div class="card p-8 text-sm muted">Dashboard – sem dáme 7 karet.</div>`
+async function paintStatic() {
+  initThemeUI($('toolbar'))
+  renderSidebar($('sidebar'))
+}
+
+async function route(){
+  const h = parseHash()
+  await paintStatic()
+
+  // DASHBOARD
+  if (h.view === 'dashboard') {
+    $('breadcrumbs').innerHTML = ''
+    $('actions-bar').innerHTML = ''
+    $('content').innerHTML = `<div class="card p-4">Dashboard – sem dáme 7 karet.</div>`
     return
   }
 
-  const modConf = MODULES.find(m => m.id === route.mod)
-  if (!modConf) {
-    document.getElementById('breadcrumbs').innerHTML = ''
-    document.getElementById('actions-bar').innerHTML = ''
-    content.innerHTML = `<div class="card p-4">Neznámý modul.</div>`
+  // MODUL
+  const mod = findModule(h.mod)
+  if (!mod){
+    $('content').innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     return
   }
 
-  // připravíme item (dlaždice nebo formulář)
-  const kind = route.kind === 'f' ? 'form' : 'tile'
-  const fallbackId = kind === 'tile' ? modConf.defaultTile : modConf.forms?.[0]?.id
-  const currId = route.id || fallbackId
-  const item = (kind === 'tile'
-    ? (modConf.tiles || []).find(t => t.id === currId)
-    : (modConf.forms || []).find(f => f.id === currId)
-  ) || null
+  // jakou dlaždici/form zobrazit
+  const activeTile = h.kind === 'tile'
+    ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
+    : (mod.defaultTile || mod.tiles?.[0]?.id || null)
 
-  // breadcrumbs + actions bar
-  renderBreadcrumbs(modConf, item, kind)
-  renderActionsBar(modConf)
+  // BREADCRUMBS + CHIPS + DYNAMIC MAIN ACTION
+  renderBreadcrumbs($('breadcrumbs'), { mod, kind:h.kind, id: h.kind==='tile' ? activeTile : h.id })
+  renderTiles($('actions-bar'), { mod, activeTileId: activeTile })
 
-  // načti a vykresli modul
-  const { renderModule } = await import(`./modules/${modConf.id}/index.js`)
-  await renderModule(content, { kind, id: currId, params: route.params })
-}
+  // načti modul (kvůli akcím i renderu)
+  try{
+    const modImpl = await loadModule(mod.id)
+    const getActions = typeof modImpl.getActions === 'function' ? modImpl.getActions : null
+    const dynamicActions = getActions ? (await getActions({ kind: h.kind, id: h.kind==='tile' ? activeTile : h.id, params: h.params })) || [] : []
+    renderMainAction($('actions-bar'), { mod, kind: h.kind, actions: dynamicActions })
 
-function wireUserName () {
-  const el = document.getElementById('userName')
-  const btnAuth = document.getElementById('btnAuth')
-  if (!el || !btnAuth) return
-
-  const set = (user) => {
-    const name = user?.user_metadata?.full_name || user?.email || ''
-    el.textContent = name ? `${name}` : ''
-    btnAuth.classList.toggle('hidden', !!user)
+    // OBSAH
+    const { renderModule } = modImpl
+    await renderModule($('content'), { kind: h.kind, id: h.kind==='tile' ? activeTile : h.id, params: h.params })
+  }catch(err){
+    console.error(err)
+    $('content').innerHTML = `<div class="card p-4">Chyba načtení modulu.</div>`
   }
-
-  // init
-  supabase.auth.getUser().then(({ data }) => set(data?.user ?? null))
-  // on change
-  supabase.auth.onAuthStateChange((_e, session) => set(session?.user ?? null))
 }
 
-// ---- EVENTS ----
-window.addEventListener('hashchange', () => {
-  syncModuleFromHash()
-  renderChrome()
-  renderContent()
-})
-
-window.addEventListener('load', async () => {
+window.addEventListener('DOMContentLoaded', async () => {
   initAuthUI(supabase)
-  wireUserName()
-
-  const btnAcc = document.getElementById('btnAccount')
-  if (btnAcc) btnAcc.onclick = () => { location.hash = '#/m/020-muj-ucet' }
-
-  const tb = document.getElementById('toolbar')
-  if (tb) {
-    tb.innerHTML = `<button id="btnSignOut" class="px-3 py-1 rounded bg-white border text-sm hidden">Odhlásit</button>`
-    const btn = document.getElementById('btnSignOut')
-    btn.onclick = () => signOut(supabase)
-    supabase.auth.onAuthStateChange((_e, s) => btn.classList.toggle('hidden', !s?.user))
-  }
-
-  document.getElementById('home-button')?.addEventListener('click', () => {
-    const st = getState()
-    if (st.unsaved && !confirm('Máte neuložené změny. Odejít bez uložení?')) return
-    setUnsaved(false)
-    location.hash = '#/dashboard'
-  })
-
-  syncModuleFromHash()
-  renderChrome()
-  renderContent()
+  const homeBtn = $('home-button'); if (homeBtn) homeBtn.onclick = ()=> location.hash = '#/dashboard'
+  await route()
 })
+window.addEventListener('hashchange', route)
