@@ -1,19 +1,28 @@
 // src/ui/mainActionBtn.js
-export function renderMainAction(root, { mod, kind }){
+export function renderMainAction(root, { mod, kind, actions = [] }){
   if (!root || !mod) return
-  const forms = mod.forms || []
-  if (!forms.length) return
 
-  const btns = forms.map(f => `
-    <a class="px-3 py-2 rounded bg-slate-900 text-white text-sm"
-       href="#/m/${mod.id}/f/${f.id}">
-       ${f.icon || '➕'} ${f.label}
-    </a>
-  `).join('')
+  // Fallback: první form z module.config (globální +Přidat)
+  const fallback = (mod.forms?.length)
+    ? [`<a class="px-3 py-2 rounded bg-slate-900 text-white text-sm"
+         href="#/m/${mod.id}/f/${mod.forms[0].id}">
+         ${mod.forms[0].icon || '➕'} ${mod.forms[0].label}
+       </a>`]
+    : []
 
-  // přidáme vpravo za tiles (nepřepisujeme)
+  // Dynamické akce z aktuální dlaždice/formuláře
+  const dyn = (actions || []).map(a => {
+    const icon = a.icon || '🔘'
+    const label = a.label || 'Akce'
+    return a.href
+      ? `<a class="px-3 py-2 rounded bg-slate-900 text-white text-sm" href="${a.href}">${icon} ${label}</a>`
+      : `<button class="px-3 py-2 rounded bg-slate-900 text-white text-sm" data-action="${a.id||''}">${icon} ${label}</button>`
+  })
+
   const holder = document.createElement('div')
   holder.className = 'ml-2 flex gap-2'
-  holder.innerHTML = btns
+  holder.innerHTML = [...fallback, ...dyn].join('')
+
+  // nepřepisujeme chipy dlaždic – jen připojíme akce vpravo
   root.appendChild(holder)
 }
