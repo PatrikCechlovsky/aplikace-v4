@@ -8,6 +8,5 @@ export function renderTiles(root, { mod, activeTileId }){
     </a>
   `).join('')
 
-  // vložíme chipy; main action tlačítka přidá mainActionBtn.js (append)
   root.innerHTML = `<div class="flex flex-wrap gap-2">${chips}</div>`
 }
