@@ -1,7 +1,6 @@
 # Aplikace pronajímatel — v4
 
-// test
-//test 2
+
 Webová aplikace pro správu pronajímatelů, nájemníků, nemovitostí a souvisejících modulů.  
 Cílem je mít **pevný 7-zónový layout**, **dynamický sidebar**, přepínatelná témata (light/dark/gray) a backend přes **Supabase** (Auth + Postgres s RLS).
 
