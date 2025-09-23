@@ -31,20 +31,35 @@ function renderChrome () {
   renderSidebar(document.getElementById('sidebar'))
 }
 
-function renderActionsBar (modConf) {
-  const bar = document.getElementById('actions-bar')
-  if (!bar) return
-  if (!modConf) { bar.innerHTML = ''; return }
+- function renderActionsBar (modConf) {
++ function renderActionsBar (modConf, actions = []) {
+   const bar = document.getElementById('actions-bar')
+   if (!bar) return
+   if (!modConf) { bar.innerHTML = ''; return }
 
-  const tiles = (modConf.tiles || []).map(t =>
-    `<a class="chip tile px-3 py-1 text-sm" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`
-  )
-  const main = (modConf.forms?.length)
-    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
-    : []
+   const tiles = (modConf.tiles || []).map(t =>
+     `<a class="chip tile px-3 py-1 text-sm" href="#/m/${modConf.id}/t/${t.id}">${t.icon || ''} ${t.label}</a>`
+   )
+-  const main = (modConf.forms?.length)
+-    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
+-    : []
+-
+-  bar.innerHTML = [...tiles, ...main].join('')
++  // “globální” + tlačítko z module.config (zůstává – fallback)
++  const defaultMain = (modConf.forms?.length)
++    ? [`<a class="btn-primary text-sm px-3 py-1" href="#/m/${modConf.id}/f/${modConf.forms[0].id}">+ ${modConf.forms[0].label}</a>`]
++    : []
++  // akce z aktuální dlaždice/formuláře (přijdou z modulu)
++  const dynamic = actions.map(a => {
++    const icon = a.icon || '🔘'
++    const label = a.label || 'Akce'
++    return a.href
++      ? `<a class="btn-primary text-sm px-3 py-1" href="${a.href}">${icon} ${label}</a>`
++      : `<button class="btn-primary text-sm px-3 py-1" data-action="${a.id||''}">${icon} ${label}</button>`
++  })
++  bar.innerHTML = [...tiles, ...defaultMain, ...dynamic].join('')
+ }
 
-  bar.innerHTML = [...tiles, ...main].join('')
-}
 
 function renderBreadcrumbs (modConf, item, kind) {
   const bc = document.getElementById('breadcrumbs')
