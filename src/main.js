@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 import { initAuthUI, signOut } from './ui/auth.js'
-import { renderSidebar } from './ui/sidebar.js?v=11'
+import { renderSidebar } from './ui/sidebar.emoji.js?v=1'
 import { MODULES } from './app/modules.index.js'
 import { getState, setModule, setUnsaved } from './app/state.js'
 
