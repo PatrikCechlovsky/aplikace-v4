@@ -1,7 +1,5 @@
 # PRAVIDLA PROJEKTU (Aplikace pronajímatel)
 
-
-
 ## 0. Cíl
 - Web-only aplikace (statická), **bez buildu**, vše přes ESM a CDN.
 - Backend: **Supabase** (Auth + Postgres) s **RLS**. Frontend používá **jen ANON key**.
