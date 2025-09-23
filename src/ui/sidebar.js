@@ -1,6 +1,5 @@
 // src/ui/sidebar.js
 import { MODULES } from '../app/modules.index.js' // máš už hotové
-// otevřený modul si držíme v paměti, ale hlavní je stejně hash
 const OPEN_KEY = 'ui:openModule'
 
 function activeFromHash(){
@@ -10,7 +9,6 @@ function activeFromHash(){
 }
 
 function isOpen(modId, activeMod){
-  // otevři aktivní modul nebo to, co si pamatujeme z minula
   const remembered = localStorage.getItem(OPEN_KEY)
   return (modId === activeMod) || (remembered === modId)
 }
@@ -51,5 +49,17 @@ export function renderSidebar(root){
     </nav>
   `
 
-  // klik na modul jen přepíná otevření/zavření (navigace se stejně stane přes href)
-  root.querySelectorAll('[data-mod]').forEach
+  // klik na modul → zapamatujeme, že se má otevřít
+  root.querySelectorAll('[data-mod]').forEach(a => {
+    a.addEventListener('click', () => {
+      const id = a.getAttribute('data-mod')
+      localStorage.setItem(OPEN_KEY, id)
+    })
+  })
+}
+
+// auto-refresh při změně hash
+window.addEventListener('hashchange', () => {
+  const el = document.getElementById('sidebar')
+  if (el) renderSidebar(el)
+})
