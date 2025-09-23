@@ -23,3 +23,21 @@ export async function renderModule(root, { kind, id }){
     root.innerHTML = card('Sekce nenalezena.')
   }
 }
+
+/**
+ * Dynamické akce pro „Main Action“ lištu podle kontextu.
+ * Vrací pole { id?, icon?, label, href? }.
+ */
+export async function getActions({ kind, id }) {
+  if (kind === 'tile' && id === 'seznam') {
+    return [
+      { id: 'invite', icon: '➕', label: 'Pozvat uživatele', href: '#/m/010-sprava-uzivatelu/f/novy' }
+    ]
+  }
+  if (kind === 'form' && id === 'edit') {
+    return [
+      { id: 'back', icon: '↩️', label: 'Zpět na seznam', href: '#/m/010-sprava-uzivatelu/t/seznam' }
+    ]
+  }
+  return []
+}
