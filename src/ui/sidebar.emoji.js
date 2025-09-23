@@ -1,4 +1,6 @@
 // src/ui/sidebar.js
+console.log('sidebar.emoji.js LOADED', import.meta.url);
+window.__SIDEBAR_VER__ = 'emoji-v1';
 import { MODULES } from '../app/modules.index.js'
 
 // Pomocný log, abychom viděli, že se načetla NOVÁ verze souboru:
