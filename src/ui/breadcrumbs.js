@@ -1,4 +1,4 @@
-import { MODULES } from '../app/modules.js';
+import { MODULES } from '../app/modules.index.js';
 import { getState } from '../app/state.js';
 
 export function renderBreadcrumbs(root){
