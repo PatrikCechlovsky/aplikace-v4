@@ -9,10 +9,11 @@ import { getState, setModule, setUnsaved } from './app/state.js'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    persistSession: true,       // ukládá session do localStorage
-    autoRefreshToken: true,     // tiché obnovování tokenu
-    detectSessionInUrl: true,   // pro magic linky (nevadí mít zapnuto)
-
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  }
+})
 // ---- ROUTER ----
 function parseRoute() {
   const raw = (location.hash || '#/dashboard').slice(1)
