@@ -17,20 +17,17 @@ import nastaveni    from '../modules/900-nastaveni/module.config.js'
 import help         from '../modules/990-help/module.config.js'
 
 // Export ve správném pořadí pro sidebar
-export const MODULES = [
-  userMgmt, // klidně přesuň, kam chceš
-  myAccount,
-  pronajimatel,
-  nemovitost,
-  najemnik,
-  smlouva,
-  sluzby,
-  platby,
-  finance,
-  energie,
-  udrzba,
-  dokumenty,
-  komunikace,
-  nastaveni,
-  help,
+const RAW = [
+  myAccount, pronajimatel, nemovitost, najemnik, smlouva, sluzby,
+  platby, finance, energie, udrzba, dokumenty, komunikace,
+  nastaveni, help, userMgmt,
 ]
+
+// preferujeme číslo na začátku id; 900/990 necháme až na konec
+function weight(m) {
+  const n = parseInt(m.id, 10) || 999
+  if (n >= 900) return n + 1000 // posuň „Nastavení“/„Nápověda“ dolů
+  return n
+}
+
+export const MODULES = [...RAW].sort((a, b) => weight(a) - weight(b))
