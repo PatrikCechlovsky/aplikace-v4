@@ -4,15 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pronajímatel – Supabase</title>
-  <!-- TailwindCSS z CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./styles.css" />
-  <!-- Supabase: jen konfigurace (URL + ANON) -->
   <script type="module" src="./supabase.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header class="w-full bg-white border-b sticky top-0 z-50">
     <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
+      <!-- logo = komponenta 1 -->
       <button id="app-logo" class="font-semibold text-lg btn-ghost">🏠 Pronajímatel</button>
 
       <!-- pravá část headeru: malé akce + jméno + účet + auth -->
@@ -24,7 +23,8 @@
         <button id="btnAccount" class="btn-ghost px-2 py-1 text-sm" title="Můj účet">👤</button>
 
         <button id="btnAuth" class="px-3 py-1 rounded bg-slate-900 text-white text-sm">Přihlásit</button>
-        <div id="toolbar"></div>
+        <!-- Vzhled skryjeme, přidáme později v Nastavení -->
+        <div id="toolbar" class="hidden"></div>
       </div>
     </div>
   </header>
@@ -34,15 +34,13 @@
       <aside id="sidebar" class="card p-2"></aside>
 
       <section>
-        <!-- horní řádka v pravém sloupci -->
-        <div class="flex items-center justify-between mb-2">
-          <button id="home-button" class="px-3 py-1 border rounded text-sm">🏠 Domů</button>
+        <!-- Řádek 1: breadcrumbs vlevo + akce vpravo -->
+        <div id="crumbs-row" class="flex items-center justify-between mb-2 gap-3">
+          <div id="breadcrumbs" class="text-sm"></div>
+          <div id="crumb-actions" class="flex items-center gap-2"></div>
         </div>
 
-        <!-- Breadcrumbs: vedle sidebaru, nad obsahem -->
-        <div id="breadcrumbs" class="text-xs mb-2 text-slate-500"></div>
-
-        <!-- Sloučené Tiles + Main Action -->
+        <!-- Řádek 2: chips (dlaždice) -->
         <div id="actions-bar" class="mb-3 flex flex-wrap gap-2"></div>
 
         <!-- Pracovní plocha -->
@@ -57,25 +55,12 @@
       <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
 
       <label class="block text-sm mb-2" for="authEmail">Email</label>
-      <input
-        id="authEmail"
-        name="email"
-        class="w-full border rounded p-2 mb-3"
-        type="email"
-        autocomplete="username email"
-        required
-      />
+      <input id="authEmail" name="email" class="w-full border rounded p-2 mb-3" type="email"
+             autocomplete="username email" required />
 
       <label class="block text-sm mb-2" for="authPass">Heslo</label>
-      <input
-        id="authPass"
-        name="current-password"
-        class="w-full border rounded p-2 mb-4"
-        type="password"
-        minlength="6"
-        autocomplete="current-password"
-        required
-      />
+      <input id="authPass" name="current-password" class="w-full border rounded p-2 mb-4" type="password"
+             minlength="6" autocomplete="current-password" required />
 
       <div class="flex gap-2">
         <button id="btnDoLogin" class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
@@ -87,6 +72,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./src/main.js?v=45"></script>
+  <script type="module" src="./src/main.js?v=46"></script>
 </body>
 </html>
