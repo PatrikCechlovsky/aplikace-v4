@@ -79,33 +79,35 @@ export function initAuthUI(supabase){
   }
   function closeDialog(){ try{ dlg?.close() }catch{} }
 
-  // LOGIN (heslem) — vždy předem tvrdý reset
-  el?.btnLogin?.addEventListener('click', async (e)=>{
+    el?.btnLogin?.addEventListener('click', async (e)=>{
     e.preventDefault()
     setBusy(true, 'Přihlašuji…')
     el.msg.textContent = 'Přihlašuji…'
     const email = (el.email.value||'').trim()
     const password = el.pass.value||''
-
+  
+    // vyčisti uvízlé tokeny
+    await forceSignOut(supabase, 'local')
+  
+    // 10s timeout – když se to „nevrátí“, ukážeme jasnou informaci
+    const timeout = (ms) => new Promise((_,rej)=>setTimeout(()=>rej(new Error('Vypršel čas přihlášení (timeout).')), ms))
     try{
-      // 1) vyčisti staré tokeny (řeší „zamrznutý“ stav)
-      await forceSignOut(supabase, 'local')
-
-      // 2) pokus o přihlášení
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-
-      // 3) ověř, že session skutečně existuje
+      const res = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        timeout(10000)
+      ])
+      if (res?.error) throw res.error
+  
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Session se nevytvořila (zkuste znovu).')
-
-      // 4) OK → UI + redirect na Domů
+      if (!session) throw new Error('Session se nevytvořila (zkontroluj projekt URL/ANON a potvrzení e-mailu).')
+  
       el.msg.textContent = 'OK'
       closeDialog()
-      localStorage.removeItem(OPEN_KEY)
+      localStorage.removeItem('ui:openModule')
       location.hash = '#/dashboard'
       await refreshUI()
     } catch(err){
+      // ukaž důvod: špatné heslo / nepotvrzený e-mail / timeout / jiný projekt
       el.msg.textContent = 'Chyba: ' + (err?.message || err)
     } finally {
       setBusy(false)
