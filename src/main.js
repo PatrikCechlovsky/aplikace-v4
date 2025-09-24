@@ -1,18 +1,11 @@
 // src/main.js
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
+import { supabase } from '../supabase.js'              // ✅ použít existující klient (žádný createClient)
 import { MODULES } from './app/modules.index.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { renderBreadcrumbs } from './ui/breadcrumbs.js'
-import { renderTiles } from './ui/tiles.js'
-import { renderCrumbActions } from './ui/mainActionBtn.js'   // ⬅ akce u breadcrumbs
+import { renderCrumbActions } from './ui/mainActionBtn.js'
 import { initAuthUI } from './ui/auth.js'
-// import { initThemeUI } from './ui/theme.js' // vzhled vypnutý pro teď
-
-import { initComp01 } from './components/comp01.js' // logo → domů + zavřít sidebar
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+import { initComp01 } from './components/comp01.js'    // logo → domů + zavřít sidebar
 
 const $ = (id) => document.getElementById(id)
 const findModule = (id) => MODULES.find(m => m.id === id)
@@ -35,7 +28,6 @@ async function loadModule(modId){
 }
 
 async function paintStatic() {
-  // initThemeUI($('toolbar')) // skryto
   renderSidebar($('sidebar'))
 }
 
@@ -43,7 +35,6 @@ async function route(){
   const h = parseHash()
   await paintStatic()
 
-  // DASHBOARD
   if (h.view === 'dashboard') {
     $('breadcrumbs').innerHTML = `
       <a id="home-link" class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>
@@ -55,35 +46,30 @@ async function route(){
     return
   }
 
-  // MODUL
   const mod = findModule(h.mod)
   if (!mod){
     $('content').innerHTML = `<div class="card p-4">Neznámý modul.</div>`
     return
   }
 
-  // jakou dlaždici/form zobrazit
   const activeTile = h.kind === 'tile'
     ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
     : (mod.defaultTile || mod.tiles?.[0]?.id || null)
 
-  // BREADCRUMBS vlevo
   renderBreadcrumbs($('breadcrumbs'), { mod, kind:h.kind, id: h.kind==='tile' ? activeTile : h.id })
   bindHomeCloseSidebar()
 
-  // CHIPS vypnuté – používáme jen strom v sidebaru
+  // chips vypnuté – používáme strom v sidebaru
   $('actions-bar').innerHTML = ''
 
-  // načti modul
   try{
     const modImpl = await loadModule(mod.id)
 
-    // akce vpravo u breadcrumbs (ikony s tooltipem)
     const getActions = typeof modImpl.getActions === 'function' ? modImpl.getActions : null
     const dynamicActions = getActions ? (await getActions({ kind: h.kind, id: h.kind==='tile' ? activeTile : h.id, params: h.params })) || [] : []
+    $('crumb-actions').innerHTML = ''
     renderCrumbActions($('crumb-actions'), { mod, kind: h.kind, actions: dynamicActions })
 
-    // OBSAH
     const { renderModule } = modImpl
     await renderModule($('content'), { kind: h.kind, id: h.kind==='tile' ? activeTile : h.id, params: h.params })
   }catch(err){
@@ -92,7 +78,6 @@ async function route(){
   }
 }
 
-// klik na „Domů“ musí také zavřít rozbalený modul v sidebaru
 function bindHomeCloseSidebar(){
   const OPEN_KEY = 'ui:openModule'
   $('home-link')?.addEventListener('click', () => {
@@ -101,8 +86,8 @@ function bindHomeCloseSidebar(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  initAuthUI(supabase)
-  initComp01()         // logo → domů + zavřít sidebar
+  initAuthUI(supabase)     // předáme stejný klient (i když si ho auth.js importuje, nevadí)
+  initComp01()
   await route()
 })
 window.addEventListener('hashchange', route)
