@@ -178,7 +178,7 @@ export function initAuthUI() {
     try{
       const email = (elReset.email.value || '').trim()
       await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth/callback'
+        redirectTo: window.location.origin + '/#recover'
       })
       elReset.msgE.textContent = 'Hotovo. Zkontrolujte e-mail (odkaz pro nastavení hesla).'
     } catch(err){
