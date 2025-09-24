@@ -2,14 +2,15 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-import { initComp01 } from './components/comp01.js'
 import { MODULES } from './app/modules.index.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { renderBreadcrumbs } from './ui/breadcrumbs.js'
 import { renderTiles } from './ui/tiles.js'
-import { renderMainAction } from './ui/mainActionBtn.js'
+import { renderCrumbActions } from './ui/mainActionBtn.js'   // ⬅ akce u breadcrumbs
 import { initAuthUI } from './ui/auth.js'
-import { initThemeUI } from './ui/theme.js'
+// import { initThemeUI } from './ui/theme.js' // vzhled vypnutý pro teď
+
+import { initComp01 } from './components/comp01.js' // logo → domů + zavřít sidebar
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -34,7 +35,7 @@ async function loadModule(modId){
 }
 
 async function paintStatic() {
-  initThemeUI($('toolbar'))
+  // initThemeUI($('toolbar')) // skryto
   renderSidebar($('sidebar'))
 }
 
@@ -44,9 +45,13 @@ async function route(){
 
   // DASHBOARD
   if (h.view === 'dashboard') {
-    $('breadcrumbs').innerHTML = ''
+    $('breadcrumbs').innerHTML = `
+      <a id="home-link" class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>
+    `
+    $('crumb-actions').innerHTML = ''
     $('actions-bar').innerHTML = ''
     $('content').innerHTML = `<div class="card p-4">Dashboard – sem dáme 7 karet.</div>`
+    bindHomeCloseSidebar()
     return
   }
 
@@ -62,16 +67,21 @@ async function route(){
     ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
     : (mod.defaultTile || mod.tiles?.[0]?.id || null)
 
-  // BREADCRUMBS + CHIPS + DYNAMIC MAIN ACTION
+  // BREADCRUMBS vlevo
   renderBreadcrumbs($('breadcrumbs'), { mod, kind:h.kind, id: h.kind==='tile' ? activeTile : h.id })
+  bindHomeCloseSidebar()
+
+  // CHIPS (dlaždice) na 2. řádku
   renderTiles($('actions-bar'), { mod, activeTileId: activeTile })
 
-  // načti modul (kvůli akcím i renderu)
+  // načti modul
   try{
     const modImpl = await loadModule(mod.id)
+
+    // akce vpravo u breadcrumbs (ikony s tooltipem)
     const getActions = typeof modImpl.getActions === 'function' ? modImpl.getActions : null
     const dynamicActions = getActions ? (await getActions({ kind: h.kind, id: h.kind==='tile' ? activeTile : h.id, params: h.params })) || [] : []
-    renderMainAction($('actions-bar'), { mod, kind: h.kind, actions: dynamicActions })
+    renderCrumbActions($('crumb-actions'), { mod, kind: h.kind, actions: dynamicActions })
 
     // OBSAH
     const { renderModule } = modImpl
@@ -82,9 +92,17 @@ async function route(){
   }
 }
 
+// klik na „Domů“ musí také zavřít rozbalený modul v sidebaru
+function bindHomeCloseSidebar(){
+  const OPEN_KEY = 'ui:openModule'
+  $('home-link')?.addEventListener('click', () => {
+    localStorage.removeItem(OPEN_KEY)
+  })
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   initAuthUI(supabase)
-  const homeBtn = $('home-button'); if (homeBtn) homeBtn.onclick = ()=> location.hash = '#/dashboard'
+  initComp01()         // logo → domů + zavřít sidebar
   await route()
 })
 window.addEventListener('hashchange', route)
