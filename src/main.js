@@ -1,5 +1,5 @@
 // src/main.js
-import { supabase } from '../supabase.js'              // ✅ použít existující klient (žádný createClient)
+import { supabase } from './supabase.js';              // ✅ použít existující klient (žádný createClient)
 import { MODULES } from './app/modules.index.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { renderBreadcrumbs } from './ui/breadcrumbs.js'
