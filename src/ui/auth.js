@@ -255,7 +255,8 @@ export function initAuthUI() {
 
     elReset.msgP.textContent = 'Ukládám…';
     try{
-      const { error } = await supabase.auth.updateUser({ password: p1 });
+      const { data, error } = await supabase.auth.updateUser({ password: p1 });
+      console.log('[updateUser]', { data, error });
       if (error) throw error;
       elReset.msgP.textContent = 'Heslo změněno. Můžete se přihlásit.';
       setTimeout(()=> dResetPass?.close(), 1200);
