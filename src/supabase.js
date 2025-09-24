@@ -1,3 +1,6 @@
+
+console.log('[SUPABASE INIT]', SUPABASE_URL, (SUPABASE_ANON_KEY||'').slice(0,12)+'…');
+
 // src/supabase.js
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
