@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pronajímatel – Supabase</title>
 
-  <!-- Tailwind z CDN (ok pro prototyp) -->
+  <!-- Favicon (ať není 404 v konzoli) -->
+  <link rel="icon" href="/favicon.ico" />
+
+  <!-- Tailwind z CDN (OK pro prototyp) -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <link rel="stylesheet" href="./styles.css" />
 </head>
-
 <body class="bg-slate-50 text-slate-900">
   <!-- Header -->
   <header class="w-full bg-white border-b sticky top-0 z-50">
@@ -35,8 +38,9 @@
       <aside id="sidebar" class="card p-2"></aside>
 
       <section>
+        <!-- Horní řádka vpravo -->
         <div class="flex items-center justify-between mb-2">
-          <a id="home-button" class="px-3 py-1 border rounded text-sm inline-flex items-center gap-1">🏠 Domů</a>
+          <button id="home-button" class="px-3 py-1 border rounded text-sm inline-flex items-center gap-1">🏠 Domů</button>
         </div>
 
         <!-- Breadcrumbs + pravé akce -->
@@ -45,10 +49,10 @@
           <div id="crumb-actions" class="flex items-center gap-2"></div>
         </div>
 
-        <!-- (volitelně) chips / tiles bar -->
+        <!-- (volitelně) Tiles/Main action bar -->
         <div id="actions-bar" class="mb-3 flex flex-wrap gap-2"></div>
 
-        <!-- Obsah -->
+        <!-- Pracovní plocha -->
         <div id="content"></div>
       </section>
     </div>
@@ -60,12 +64,27 @@
       <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
 
       <label class="block text-sm mb-2" for="authEmail">Email</label>
-      <input id="authEmail" name="email" class="w-full border rounded p-2 mb-3"
-             type="email" autocomplete="username email" required />
+      <input
+        id="authEmail"
+        name="email"
+        class="w-full border rounded p-2 mb-3"
+        type="email"
+        autocomplete="username email"
+        spellcheck="false"
+        autofocus
+        required
+      />
 
       <label class="block text-sm mb-2" for="authPass">Heslo</label>
-      <input id="authPass" name="current-password" class="w-full border rounded p-2 mb-4"
-             type="password" minlength="6" autocomplete="current-password" required />
+      <input
+        id="authPass"
+        name="current-password"
+        class="w-full border rounded p-2 mb-4"
+        type="password"
+        minlength="6"
+        autocomplete="current-password"
+        required
+      />
 
       <div class="flex gap-2">
         <button id="btnDoLogin"  type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
@@ -81,17 +100,20 @@
     </form>
   </dialog>
 
-  <!-- Dialog: poslat reset odkaz -->
+  <!-- Dialog: poslat reset odkaz na e-mail -->
   <dialog id="resetEmailDialog" class="rounded-xl p-0 w-full max-w-sm">
     <form method="dialog" class="p-4 bg-white">
       <h2 class="font-semibold mb-3">Obnovit heslo</h2>
       <p class="text-sm mb-3">Pošleme odkaz na e-mail pro nastavení nového hesla.</p>
+
       <label class="block text-sm mb-2" for="resetEmail">Email</label>
       <input id="resetEmail" type="email" class="w-full border rounded p-2 mb-4" required />
+
       <div class="flex gap-2">
-        <button id="btnSendReset"  type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Poslat odkaz</button>
+        <button id="btnSendReset" type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Poslat odkaz</button>
         <button id="btnCloseResetEmail" type="button" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
       </div>
+
       <p id="resetEmailMsg" class="text-sm text-slate-500 mt-3"></p>
     </form>
   </dialog>
@@ -100,19 +122,25 @@
   <dialog id="resetPassDialog" class="rounded-xl p-0 w-full max-w-sm">
     <form method="dialog" class="p-4 bg-white">
       <h2 class="font-semibold mb-3">Nastavit nové heslo</h2>
+
       <label class="block text-sm mb-2" for="newPass1">Nové heslo</label>
-      <input id="newPass1" type="password" minlength="6" class="w-full border rounded p-2 mb-3" required />
+      <input id="newPass1" type="password" minlength="6" autocomplete="new-password"
+             class="w-full border rounded p-2 mb-3" required />
+
       <label class="block text-sm mb-2" for="newPass2">Potvrdit heslo</label>
-      <input id="newPass2" type="password" minlength="6" class="w-full border rounded p-2 mb-4" required />
+      <input id="newPass2" type="password" minlength="6" autocomplete="new-password"
+             class="w-full border rounded p-2 mb-4" required />
+
       <div class="flex gap-2">
         <button id="btnSetNewPass"  type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Uložit</button>
         <button id="btnCloseResetPass" type="button" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
       </div>
+
       <p id="resetPassMsg" class="text-sm text-slate-500 mt-3"></p>
     </form>
   </dialog>
 
-  <!-- App start -->
+  <!-- Aplikace -->
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
