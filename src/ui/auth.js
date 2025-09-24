@@ -1,37 +1,35 @@
 // src/ui/auth.js
-// Po načtení zkusit obnovit session z URL hash
-(async function handleRecoveryFromHash() {
-  const hash = window.location.hash;
-
-  if (hash.includes('access_token') && hash.includes('type=recovery')) {
-    const params = new URLSearchParams(hash.substring(1));
-    const access_token  = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
-
-    if (access_token && refresh_token) {
-      // Nastav session do Supabase
-      const { data, error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token
-      });
-
-      if (error) {
-        console.error("Chyba při nastavování recovery session:", error);
-      } else {
-        console.log("Recovery session nastavena", data);
-        // Teď už můžeme otevřít dialog nové heslo
-        openResetPassDialog();
-      }
-
-      // vyčistíme hash, ať nezůstane v URL
-      try { history.replaceState(null, '', location.pathname); } catch {}
-    }
-  }
-})();
-
 import { supabase } from '../supabase.js';
 
 const OPEN_KEY = 'ui:openModule';
+
+// --- Recovery: vytvoř session z hash tokenů (spustí se hned po importu) ---
+window.__recoverySessionReady = false;
+(async function ensureRecoverySessionFromHash() {
+  try {
+    const h = window.location.hash || '';
+    // Supabase vrací: #access_token=…&refresh_token=…&type=recovery
+    if (/(type=recovery|access_token=)/.test(h)) {
+      const p = new URLSearchParams(h.slice(1));
+      const access_token  = p.get('access_token');
+      const refresh_token = p.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+        console.log('[recovery:setSession]', { data, error });
+        if (!error) {
+          window.__recoverySessionReady = true;               // řekneme UI, že může otevřít dialog
+          try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+          window.dispatchEvent(new Event('recovery-session-ready')); // notify
+        }
+      } else {
+        console.warn('[recovery] access_token / refresh_token v URL chybí:', h);
+      }
+    }
+  } catch (e) {
+    console.error('[recovery] setSession error', e);
+  }
+})();
 
 // bezpečný „tvrdý“ sign-out (vyčistí i rozbité tokeny v localStorage)
 async function forceSignOut(scope = 'global') {
@@ -82,7 +80,7 @@ export function initAuthUI() {
       if (el.btnLogin)  { el.btnLogin.disabled = true;  el.btnLogin.textContent  = text || 'Přihlašuji…'; }
       if (el.btnSignup) { el.btnSignup.disabled = true; el.btnSignup.textContent = 'Registruji…'; }
     } else {
-      if (el.btnLogin)  { el.btnLogin.disabled = false;  el.btnLogin.textContent  = 'Přihlásit'; }
+      if (el.btnLogin)  { el.btnLogin.disabled = false; el.btnLogin.textContent  = 'Přihlásit'; }
       if (el.btnSignup) { el.btnSignup.disabled = false; el.btnSignup.textContent = 'Registrovat'; }
     }
   };
@@ -126,14 +124,18 @@ export function initAuthUI() {
   // zpřístupníme pro „Můj účet“
   window.openChangePasswordDialog = openResetPassDialog;
 
-  // --- otevřít dialog podle URL hned po načtení (/#recover nebo type=recovery) ---
-  (function openRecoveryIfInUrl() {
+  // Pokud už je recovery session připravená, otevři dialog hned
+  if (window.__recoverySessionReady) {
+    openResetPassDialog();
+  }
+  // …nebo jakmile se připraví
+  window.addEventListener('recovery-session-ready', () => openResetPassDialog());
+
+  // pro jistotu sleduj hash (když token dorazí po načtení)
+  window.addEventListener('hashchange', () => {
     const h = location.hash || '';
-    if (h.startsWith('#recover') || h.includes('type=recovery')) {
-      try { history.replaceState(null, '', location.pathname + location.search); } catch {}
-      openResetPassDialog();
-    }
-  })();
+    if (/(type=recovery|access_token=|^#recover\b)/.test(h)) openResetPassDialog();
+  });
 
   // LOGIN
   el?.btnLogin?.addEventListener('click', async (e)=>{
@@ -221,8 +223,8 @@ export function initAuthUI() {
     try{
       const email = (elReset.email.value || '').trim();
       await supabase.auth.resetPasswordForEmail(email, {
-        // hash varianta funguje i bez SPA rewrite
-        redirectTo: window.location.origin + '/#recover'
+        // nejlepší varianta: Supabase doplní #access_token…&type=recovery
+        redirectTo: window.location.origin
       });
       elReset.msgE.textContent = 'Hotovo. Zkontrolujte e-mail (odkaz pro nastavení hesla).';
     } catch(err){
@@ -240,7 +242,7 @@ export function initAuthUI() {
   });
 
   // Kdyby listener proběhl dřív, zkus otevřít hned
-  if ((location.hash || '').includes('type=recovery')) {
+  if ((location.hash || '').includes('type=recovery') || (location.hash || '').includes('access_token=')) {
     openResetPassDialog();
   }
 
