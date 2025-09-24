@@ -196,3 +196,7 @@ button, input, select, .tile, .chip {
 
 #breadcrumbs .inline-flex { padding: .2rem .4rem; border-radius: 8px; background: rgba(0,0,0,.03); }
 
+/* drobné korekce */
+.btn-ghost { background: transparent; border-radius: 6px; }
+.btn-ghost:hover { background: rgba(100,116,139,.12); }
+.card { background: white; border: 1px solid rgba(0,0,0,.06); border-radius: 12px; }
