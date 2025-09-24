@@ -1,30 +1,75 @@
 // src/ui/auth.js
 const OPEN_KEY = 'ui:openModule'
 
-// smaže supabase tokeny z localStorage a provede signOut
+// Smaže supabase tokeny z localStorage a provede signOut
 async function forceSignOut(supabase, scope = 'global') {
   try { await supabase.auth.signOut({ scope }) } catch {}
   try {
-    Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-')) localStorage.removeItem(k) })
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-')) localStorage.removeItem(k)
+    })
   } catch {}
 }
 
-export function initAuthUI(supabase){
-  const $ = (id)=>document.getElementById(id)
+export function initAuthUI(supabase) {
+  const $  = (id) => document.getElementById(id)
   const dlg = $('authDialog')
+
   const el = {
-    btnAuth:   $('btnAuth'),
-    btnAccount:$('btnAccount'),
-    userName:  $('userName'),
-    email:     $('authEmail'),
-    pass:      $('authPass'),
-    btnLogin:  $('btnDoLogin'),
-    btnSignup: $('btnDoSignup'),
-    btnClose:  $('btnCloseAuth'),
-    msg:       $('authMsg')
+    btnAuth:    $('btnAuth'),
+    btnAccount: $('btnAccount'),
+    userName:   $('userName'),
+    email:      $('authEmail'),
+    pass:       $('authPass'),
+    btnLogin:   $('btnDoLogin'),
+    btnSignup:  $('btnDoSignup'),
+    btnClose:   $('btnCloseAuth'),
+    msg:        $('authMsg'),
   }
 
-  // přidej nouzové tlačítko do dialogu (Resetovat přihlášení)
+  // --- UI helpers ---
+  const setBusy = (busy, text='') => {
+    if (busy) {
+      if (el.btnLogin)  { el.btnLogin.disabled = true;  el.btnLogin.textContent  = text || 'Přihlašuji…' }
+      if (el.btnSignup) { el.btnSignup.disabled = true; el.btnSignup.textContent = 'Registruji…' }
+    } else {
+      if (el.btnLogin)  { el.btnLogin.disabled = false;  el.btnLogin.textContent  = 'Přihlásit' }
+      if (el.btnSignup) { el.btnSignup.disabled = false; el.btnSignup.textContent = 'Registrovat' }
+    }
+  }
+
+  async function refreshUI(){
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      el.userName.textContent = session.user?.email || ''
+      if (el.btnAuth) {
+        el.btnAuth.textContent  = 'Odhlásit'
+        el.btnAuth.dataset.state = 'logged'
+        el.btnAuth.title         = 'Odhlásit'
+      }
+      if (el.btnAccount) el.btnAccount.disabled = false
+    } else {
+      el.userName.textContent = ''
+      if (el.btnAuth) {
+        el.btnAuth.textContent  = 'Přihlásit'
+        el.btnAuth.dataset.state = 'guest'
+        el.btnAuth.title         = 'Přihlásit'
+      }
+      if (el.btnAccount) el.btnAccount.disabled = true
+    }
+  }
+
+  function openDialog(){
+    if (!dlg) return
+    if (el.msg)   el.msg.textContent = ''
+    if (el.email) el.email.value = el.email.value || ''
+    if (el.pass)  el.pass.value  = ''
+    dlg.showModal()
+    setTimeout(()=>el.email?.focus(), 0)
+  }
+  function closeDialog(){ try{ dlg?.close() }catch{} }
+
+  // --- Nouzové tlačítko: Resetovat přihlášení ---
   if (el.msg && !document.getElementById('authForceReset')) {
     const r = document.createElement('button')
     r.id = 'authForceReset'
@@ -40,102 +85,71 @@ export function initAuthUI(supabase){
     el.msg.parentElement?.appendChild(r)
   }
 
-  const setBusy = (busy, text='')=>{
-    if (busy){
-      el.btnLogin.disabled = true
-      el.btnSignup.disabled = true
-      el.btnLogin.textContent = text || 'Přihlašuji…'
-    } else {
-      el.btnLogin.disabled = false
-      el.btnSignup.disabled = false
-      el.btnLogin.textContent = 'Přihlásit'
-    }
-  }
-
-  async function refreshUI(){
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session){
-      el.userName.textContent = session.user?.email || ''
-      el.btnAuth.textContent = 'Odhlásit'
-      el.btnAuth.dataset.state = 'logged'
-      el.btnAuth.title = 'Odhlásit'
-      el.btnAccount.disabled = false
-    } else {
-      el.userName.textContent = ''
-      el.btnAuth.textContent = 'Přihlásit'
-      el.btnAuth.dataset.state = 'guest'
-      el.btnAuth.title = 'Přihlásit'
-      el.btnAccount.disabled = true
-    }
-  }
-
-  function openDialog(){
-    if (!dlg) return
-    el.msg.textContent = ''
-    el.email.value = el.email.value || ''
-    el.pass.value = ''
-    dlg.showModal()
-    setTimeout(()=>el.email?.focus(), 0)
-  }
-  function closeDialog(){ try{ dlg?.close() }catch{} }
-
-    el?.btnLogin?.addEventListener('click', async (e)=>{
+  // --- LOGIN (heslem) — vždy předem tvrdý reset + timeout ---
+  el?.btnLogin?.addEventListener('click', async (e)=>{
     e.preventDefault()
     setBusy(true, 'Přihlašuji…')
-    el.msg.textContent = 'Přihlašuji…'
-    const email = (el.email.value||'').trim()
-    const password = el.pass.value||''
-  
-    // vyčisti uvízlé tokeny
+    if (el.msg) el.msg.textContent = 'Přihlašuji…'
+
+    const email = (el.email?.value || '').trim()
+    const password = el.pass?.value || ''
+
+    // 1) vyčisti uvízlé tokeny
     await forceSignOut(supabase, 'local')
-  
-    // 10s timeout – když se to „nevrátí“, ukážeme jasnou informaci
+
+    // 2) 10s timeout (když by se signIn „nevrátil“)
     const timeout = (ms) => new Promise((_,rej)=>setTimeout(()=>rej(new Error('Vypršel čas přihlášení (timeout).')), ms))
+
     try{
       const res = await Promise.race([
         supabase.auth.signInWithPassword({ email, password }),
         timeout(10000)
       ])
       if (res?.error) throw res.error
-  
+
+      // 3) ověř, že máme session
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Session se nevytvořila (zkontroluj projekt URL/ANON a potvrzení e-mailu).')
-  
-      el.msg.textContent = 'OK'
+      if (!session) throw new Error('Session se nevytvořila (zkontroluj SUPABASE_URL/ANON a potvrzení e-mailu).')
+
+      if (el.msg) el.msg.textContent = 'OK'
       closeDialog()
-      localStorage.removeItem('ui:openModule')
+      localStorage.removeItem(OPEN_KEY)
       location.hash = '#/dashboard'
       await refreshUI()
     } catch(err){
-      // ukaž důvod: špatné heslo / nepotvrzený e-mail / timeout / jiný projekt
-      el.msg.textContent = 'Chyba: ' + (err?.message || err)
+      if (el.msg) el.msg.textContent = 'Chyba: ' + (err?.message || err)
+      console.error(err)
     } finally {
       setBusy(false)
     }
   })
 
-  // SIGNUP
+  // --- SIGNUP (heslem) ---
   el?.btnSignup?.addEventListener('click', async (e)=>{
     e.preventDefault()
-    setBusy(true, 'Zakládám účet…')
-    el.msg.textContent = 'Zakládám účet…'
+    setBusy(true, 'Registruji…')
+    if (el.msg) el.msg.textContent = 'Zakládám účet…'
     try{
-      const email = (el.email.value||'').trim()
-      const password = el.pass.value||''
+      const email = (el.email?.value || '').trim()
+      const password = el.pass?.value || ''
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) throw error
-      el.msg.textContent = 'Účet vytvořen. Zkontrolujte e-mail (potvrzení).'
+      if (el.msg) el.msg.textContent = 'Účet vytvořen. Zkontrolujte e-mail (potvrzení).'
     } catch(err){
-      el.msg.textContent = 'Chyba: ' + (err?.message || err)
+      if (el.msg) el.msg.textContent = 'Chyba: ' + (err?.message || err)
+      console.error(err)
     } finally {
       setBusy(false)
     }
   })
 
-  // ZAVŘÍT
-  el?.btnClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeDialog() })
+  // --- ZAVŘÍT dialog ---
+  el?.btnClose?.addEventListener('click', (e)=>{
+    e.preventDefault()
+    closeDialog()
+  })
 
-  // HEADER: Přihlásit / Odhlásit
+  // --- HEADER: Přihlásit / Odhlásit ---
   el?.btnAuth?.addEventListener('click', async ()=>{
     if (el.btnAuth.dataset.state === 'logged'){
       // tvrdé odhlášení: global + smazání sb-* + návrat domů
@@ -148,7 +162,7 @@ export function initAuthUI(supabase){
     }
   })
 
-  // Můj účet → 020 modul
+  // „Můj účet“ → 020 modul
   el?.btnAccount?.addEventListener('click', ()=>{
     location.hash = '#/m/020-muj-ucet/t/prehled'
   })
@@ -156,6 +170,6 @@ export function initAuthUI(supabase){
   // Reakce na změnu session z jiného tabu/obnovy
   supabase.auth.onAuthStateChange(async ()=>{ await refreshUI() })
 
-  // start
+  // Start
   refreshUI()
 }
