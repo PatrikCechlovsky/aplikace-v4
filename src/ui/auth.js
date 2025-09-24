@@ -1,4 +1,34 @@
 // src/ui/auth.js
+// Po načtení zkusit obnovit session z URL hash
+(async function handleRecoveryFromHash() {
+  const hash = window.location.hash;
+
+  if (hash.includes('access_token') && hash.includes('type=recovery')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const access_token  = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+
+    if (access_token && refresh_token) {
+      // Nastav session do Supabase
+      const { data, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token
+      });
+
+      if (error) {
+        console.error("Chyba při nastavování recovery session:", error);
+      } else {
+        console.log("Recovery session nastavena", data);
+        // Teď už můžeme otevřít dialog nové heslo
+        openResetPassDialog();
+      }
+
+      // vyčistíme hash, ať nezůstane v URL
+      try { history.replaceState(null, '', location.pathname); } catch {}
+    }
+  }
+})();
+
 import { supabase } from '../supabase.js';
 
 const OPEN_KEY = 'ui:openModule';
