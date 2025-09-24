@@ -1,4 +1,6 @@
 // src/ui/auth.js
+import { supabase } from "../supabase.js";
+
 const OPEN_KEY = 'ui:openModule'
 
 // Smaže supabase tokeny z localStorage a provede signOut
