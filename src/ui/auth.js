@@ -1,7 +1,7 @@
 // src/ui/auth.js
 const OPEN_KEY = 'ui:openModule'
 
-// smaže všechny supabase tokeny z localStorage a odhlásí uživatele
+// smaže supabase tokeny z localStorage a provede signOut
 async function forceSignOut(supabase, scope = 'global') {
   try { await supabase.auth.signOut({ scope }) } catch {}
   try {
@@ -24,7 +24,22 @@ export function initAuthUI(supabase){
     msg:       $('authMsg')
   }
 
-  // -------- UI helpers --------
+  // přidej nouzové tlačítko do dialogu (Resetovat přihlášení)
+  if (el.msg && !document.getElementById('authForceReset')) {
+    const r = document.createElement('button')
+    r.id = 'authForceReset'
+    r.type = 'button'
+    r.className = 'mt-2 text-xs underline text-slate-500'
+    r.textContent = 'Resetovat přihlášení'
+    r.title = 'Smaže místní supabase tokeny a odhlásí všechna zařízení'
+    r.addEventListener('click', async ()=>{
+      el.msg.textContent = 'Resetuji…'
+      await forceSignOut(supabase, 'global')
+      el.msg.textContent = 'Vyresetováno. Zkuste se znovu přihlásit.'
+    })
+    el.msg.parentElement?.appendChild(r)
+  }
+
   const setBusy = (busy, text='')=>{
     if (busy){
       el.btnLogin.disabled = true
@@ -64,7 +79,7 @@ export function initAuthUI(supabase){
   }
   function closeDialog(){ try{ dlg?.close() }catch{} }
 
-  // -------- Login (password) --------
+  // LOGIN (heslem) — vždy předem tvrdý reset
   el?.btnLogin?.addEventListener('click', async (e)=>{
     e.preventDefault()
     setBusy(true, 'Přihlašuji…')
@@ -72,62 +87,56 @@ export function initAuthUI(supabase){
     const email = (el.email.value||'').trim()
     const password = el.pass.value||''
 
-    // 🔧 vždy nejdřív tvrdý reset, aby nezůstaly staré sb-* tokeny
-    await forceSignOut(supabase, 'local')
+    try{
+      // 1) vyčisti staré tokeny (řeší „zamrznutý“ stav)
+      await forceSignOut(supabase, 'local')
 
-    const { error: signErr } = await supabase.auth.signInWithPassword({ email, password })
-    if (signErr){
-      el.msg.textContent = 'Chyba: ' + signErr.message
+      // 2) pokus o přihlášení
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      // 3) ověř, že session skutečně existuje
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Session se nevytvořila (zkuste znovu).')
+
+      // 4) OK → UI + redirect na Domů
+      el.msg.textContent = 'OK'
+      closeDialog()
+      localStorage.removeItem(OPEN_KEY)
+      location.hash = '#/dashboard'
+      await refreshUI()
+    } catch(err){
+      el.msg.textContent = 'Chyba: ' + (err?.message || err)
+    } finally {
       setBusy(false)
-      return
     }
-
-    // ověř, že session skutečně existuje
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session){
-      await forceSignOut(supabase, 'global')
-      el.msg.textContent = 'Chyba: Session se nevytvořila (zkus znovu).'
-      setBusy(false)
-      return
-    }
-
-    el.msg.textContent = 'OK'
-    setBusy(false)
-    closeDialog()
-
-    // návrat na Domů a zavřít sidebar
-    localStorage.removeItem(OPEN_KEY)
-    location.hash = '#/dashboard'
-    await refreshUI()
   })
 
-  // -------- Signup (password) --------
+  // SIGNUP
   el?.btnSignup?.addEventListener('click', async (e)=>{
     e.preventDefault()
     setBusy(true, 'Zakládám účet…')
     el.msg.textContent = 'Zakládám účet…'
-    const email = (el.email.value||'').trim()
-    const password = el.pass.value||''
-
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error){
-      el.msg.textContent = 'Chyba: ' + error.message
+    try{
+      const email = (el.email.value||'').trim()
+      const password = el.pass.value||''
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+      el.msg.textContent = 'Účet vytvořen. Zkontrolujte e-mail (potvrzení).'
+    } catch(err){
+      el.msg.textContent = 'Chyba: ' + (err?.message || err)
+    } finally {
       setBusy(false)
-      return
     }
-    el.msg.textContent = 'Účet vytvořen. Zkontroluj e-mail (potvrzení).'
-    setBusy(false)
   })
 
-  // -------- Zavřít dialog --------
-  el?.btnClose?.addEventListener('click', (e)=>{
-    e.preventDefault()
-    closeDialog()
-  })
+  // ZAVŘÍT
+  el?.btnClose?.addEventListener('click', (e)=>{ e.preventDefault(); closeDialog() })
 
-  // -------- Header button: Přihlásit / Odhlásit --------
+  // HEADER: Přihlásit / Odhlásit
   el?.btnAuth?.addEventListener('click', async ()=>{
     if (el.btnAuth.dataset.state === 'logged'){
+      // tvrdé odhlášení: global + smazání sb-* + návrat domů
       await forceSignOut(supabase, 'global')
       localStorage.removeItem(OPEN_KEY)
       await refreshUI()
@@ -137,13 +146,13 @@ export function initAuthUI(supabase){
     }
   })
 
-  // „Můj účet“ – přesměrování do 020
+  // Můj účet → 020 modul
   el?.btnAccount?.addEventListener('click', ()=>{
     location.hash = '#/m/020-muj-ucet/t/prehled'
   })
 
-  // -------- Reakce na změny session (obnova/odhlášení v jiném tabu) --------
-  supabase.auth.onAuthStateChange(async (_event, _session)=>{ await refreshUI() })
+  // Reakce na změnu session z jiného tabu/obnovy
+  supabase.auth.onAuthStateChange(async ()=>{ await refreshUI() })
 
   // start
   refreshUI()
