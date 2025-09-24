@@ -2,6 +2,7 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.js'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+import { initComp01 } from './components/comp01.js'
 import { MODULES } from './app/modules.index.js'
 import { renderSidebar } from './ui/sidebar.js'
 import { renderBreadcrumbs } from './ui/breadcrumbs.js'
