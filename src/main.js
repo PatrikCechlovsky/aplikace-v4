@@ -71,8 +71,8 @@ async function route(){
   renderBreadcrumbs($('breadcrumbs'), { mod, kind:h.kind, id: h.kind==='tile' ? activeTile : h.id })
   bindHomeCloseSidebar()
 
-  // CHIPS (dlaždice) na 2. řádku
-  renderTiles($('actions-bar'), { mod, activeTileId: activeTile })
+  // CHIPS vypnuté – používáme jen strom v sidebaru
+  $('actions-bar').innerHTML = ''
 
   // načti modul
   try{
