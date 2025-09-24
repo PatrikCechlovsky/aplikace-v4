@@ -88,43 +88,48 @@ export function initAuthUI(supabase) {
   }
 
   // --- LOGIN (heslem) — vždy předem tvrdý reset + timeout ---
+
   el?.btnLogin?.addEventListener('click', async (e)=>{
-    e.preventDefault()
-    setBusy(true, 'Přihlašuji…')
-    if (el.msg) el.msg.textContent = 'Přihlašuji…'
+  e.preventDefault()
+  setBusy(true, 'Přihlašuji…')
+  if (el.msg) el.msg.textContent = 'Přihlašuji…'
 
-    const email = (el.email?.value || '').trim()
-    const password = el.pass?.value || ''
+  const email = (el.email?.value || '').trim()
+  const password = el.pass?.value || ''
 
-    // 1) vyčisti uvízlé tokeny
-    await forceSignOut(supabase, 'local')
+  // tvrdý lokální reset před loginem
+  try { await supabase.auth.signOut({ scope: 'local' }) } catch {} 
+  try { Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-')) localStorage.removeItem(k) }) } catch {}
 
-    // 2) 10s timeout (když by se signIn „nevrátil“)
-    const timeout = (ms) => new Promise((_,rej)=>setTimeout(()=>rej(new Error('Vypršel čas přihlášení (timeout).')), ms))
+  // 12s timeout – když se volání nevrátí, uvidíš jasnou hlášku
+  const timeout = (ms)=>new Promise((_,rej)=>setTimeout(()=>rej(new Error('Vypršel čas přihlášení (timeout). Zkontroluj SUPABASE_URL a ANON key.')), ms))
 
-    try{
-      const res = await Promise.race([
-        supabase.auth.signInWithPassword({ email, password }),
-        timeout(10000)
-      ])
-      if (res?.error) throw res.error
+  try {
+    console.time('signIn')
+    const { data, error } = await Promise.race([
+      supabase.auth.signInWithPassword({ email, password }),
+      timeout(12000)
+    ])
+    console.timeEnd('signIn')
 
-      // 3) ověř, že máme session
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Session se nevytvořila (zkontroluj SUPABASE_URL/ANON a potvrzení e-mailu).')
+    if (error) throw error
 
-      if (el.msg) el.msg.textContent = 'OK'
-      closeDialog()
-      localStorage.removeItem(OPEN_KEY)
-      location.hash = '#/dashboard'
-      await refreshUI()
-    } catch(err){
-      if (el.msg) el.msg.textContent = 'Chyba: ' + (err?.message || err)
-      console.error(err)
-    } finally {
-      setBusy(false)
-    }
-  })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Session se nevytvořila. Nejčastěji chybí potvrzení e-mailu nebo je špatný projekt/klíč.')
+
+    el.msg.textContent = 'OK'
+    closeDialog()
+    localStorage.removeItem('ui:openModule')
+    location.hash = '#/dashboard'
+    await refreshUI()
+  } catch (err) {
+    el.msg.textContent = 'Chyba: ' + (err?.message || err)
+    console.error('[LOGIN ERROR]', err)
+  } finally {
+    setBusy(false)
+  }
+})
+
 
   // --- SIGNUP (heslem) ---
   el?.btnSignup?.addEventListener('click', async (e)=>{
