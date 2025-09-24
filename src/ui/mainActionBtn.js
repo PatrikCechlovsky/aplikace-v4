@@ -1,30 +1,34 @@
 // src/ui/mainActionBtn.js
-export function renderMainAction(root, { mod, kind, actions = [] }){
+
+// Renderujeme do #crumb-actions, NE do #actions-bar.
+// Tlačítka jsou ikony s title (tooltip), zarovnané vpravo.
+export function renderCrumbActions(root, { mod, kind, actions = [] }){
   if (!root || !mod) return
-  
-  // Fallback: první form z module.config (globální +Přidat)
-  const fallback = (mod.forms?.length)
-    ? [`<a class="px-3 py-2 rounded bg-slate-900 text-white text-sm"
-         href="#/m/${mod.id}/f/${mod.forms[0].id}">
-         ${mod.forms[0].icon || '➕'} ${mod.forms[0].label}
-       </a>`]
+
+  // fallback: vezmeme první form jako + ikonu (pokud nejsou žádné dynamické akce)
+  const fallback = (!actions?.length && mod.forms?.length)
+    ? [{ href: `#/m/${mod.id}/f/${mod.forms[0].id}`, icon: mod.forms[0].icon || '➕', label: mod.forms[0].label }]
     : []
 
-  // Dynamické akce z aktuální dlaždice/formuláře
-  const dyn = (actions || []).map(a => {
-    const icon = a.icon || '🔘'
-    const label = a.label || 'Akce'
-    return a.href
-      ? `<a class="px-3 py-2 rounded bg-slate-900 text-white text-sm" href="${a.href}">${icon} ${label}</a>`
-      : `<button class="px-3 py-2 rounded bg-slate-900 text-white text-sm" data-action="${a.id||''}">${icon} ${label}</button>`
+  // poskládáme celkové akce
+  const all = [...actions, ...fallback]
+
+  // vyčistit starý obsah
+  root.innerHTML = ''
+
+  // vytvořit a přidat ikonová tlačítka
+  all.forEach(a => {
+    let el
+    if (a.href){
+      el = document.createElement('a')
+      el.href = a.href
+    } else {
+      el = document.createElement('button')
+      if (a.id) el.dataset.action = a.id
+    }
+    el.className = 'btn-ghost px-2 py-1 text-sm'
+    el.title = a.label || 'Akce'
+    el.textContent = a.icon || '🔘'
+    root.appendChild(el)
   })
-
-  const holder = document.createElement('div')
-  holder.className = 'ml-2 flex gap-2'
-  holder.innerHTML = [...fallback, ...dyn].join('')
-
-    // ⬇️ smažeme starý holder, jinak se vrství
-  root.querySelector('.ml-2')?.remove()
-
-  root.appendChild(holder)
 }
