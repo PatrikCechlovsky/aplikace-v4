@@ -247,24 +247,48 @@ export function initAuthUI() {
   }
 
   // Nastavit nové heslo
-  elReset.btnSet?.addEventListener('click', async ()=>{
+  // --- Nastavit nové heslo (nahraď celý původní handler tímto) ---
+{
+  let saving = false;
+
+  elReset.btnSet?.addEventListener('click', async () => {
+    if (saving) return;
     const p1 = elReset.pass1.value;
     const p2 = elReset.pass2.value;
+
+    // validace
     if (p1.length < 6) { elReset.msgP.textContent = 'Heslo musí mít aspoň 6 znaků.'; return; }
     if (p1 !== p2)     { elReset.msgP.textContent = 'Hesla se neshodují.'; return; }
 
+    saving = true;
     elReset.msgP.textContent = 'Ukládám…';
-    try{
+    console.log('[updateUser] start');
+
+    try {
+      // 1) ověř, že máme session z odkazu
+      const { data: s1 } = await supabase.auth.getSession();
+      console.log('[updateUser] session before update', s1?.session);
+
+      if (!s1?.session) {
+        throw new Error('Auth session missing (žádná session před update).');
+      }
+
+      // 2) zkus změnu hesla a loguj výsledek
       const { data, error } = await supabase.auth.updateUser({ password: p1 });
-      console.log('[updateUser]', { data, error });
+      console.log('[updateUser] result', { data, error });
+
       if (error) throw error;
+
       elReset.msgP.textContent = 'Heslo změněno. Můžete se přihlásit.';
-      setTimeout(()=> dResetPass?.close(), 1200);
-    } catch(err){
-      elReset.msgP.textContent = 'Chyba: ' + (err?.message || err);
+      setTimeout(() => dResetPass?.close(), 1200);
+    } catch (e) {
+      console.error('[updateUser] error', e);
+      elReset.msgP.textContent = 'Chyba: ' + (e?.message || e);
+    } finally {
+      saving = false;
     }
   });
-  elReset.btnCloseP?.addEventListener('click', (e)=>{ e.preventDefault(); dResetPass?.close(); });
+}
 
   // start
   refreshUI();
