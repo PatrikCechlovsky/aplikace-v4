@@ -1,7 +1,7 @@
 // src/ui/mainActionBtn.js
 export function renderMainAction(root, { mod, kind, actions = [] }){
   if (!root || !mod) return
-
+  
   // Fallback: první form z module.config (globální +Přidat)
   const fallback = (mod.forms?.length)
     ? [`<a class="px-3 py-2 rounded bg-slate-900 text-white text-sm"
@@ -23,6 +23,8 @@ export function renderMainAction(root, { mod, kind, actions = [] }){
   holder.className = 'ml-2 flex gap-2'
   holder.innerHTML = [...fallback, ...dyn].join('')
 
-  // nepřepisujeme chipy dlaždic – jen připojíme akce vpravo
+    // ⬇️ smažeme starý holder, jinak se vrství
+  root.querySelector('.ml-2')?.remove()
+
   root.appendChild(holder)
 }
