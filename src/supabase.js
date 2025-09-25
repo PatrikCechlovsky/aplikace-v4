@@ -13,5 +13,4 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
-// log jen pro kontrolu
-console.log('[SUPABASE INIT]', SUPABASE_URL, SUPABASE_ANON_KEY.slice(0,8)+'…');
+window.supabase = supabase;
