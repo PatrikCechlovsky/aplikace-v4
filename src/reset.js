@@ -2,51 +2,43 @@
 import { supabase } from './supabase.js';
 
 const dlg   = document.getElementById('resetPassDialog');
-const msgEl = document.getElementById('resetPassMsg');
 const btn   = document.getElementById('btnSetNewPass');
-
-function showMsg(t) { if (msgEl) msgEl.textContent = t; }
-function openDialog() { dlg?.showModal?.(); }
+const msgEl = document.getElementById('resetPassMsg');
+const showMsg = (t) => { if (msgEl) msgEl.textContent = t; };
+const openDlg = () => dlg?.showModal?.();
 
 async function ensureRecoverySessionFromHash() {
-  // už mám session?
+  // už je session?
   const { data } = await supabase.auth.getSession();
   if (data?.session) return true;
 
-  // zkus ji vytvořit z #hash
-  const p = new URLSearchParams(location.hash.slice(1));
+  // přečti původní hash (NEž ho kdokoliv smaže)
+  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+  const p = new URLSearchParams(hash);
   const type = p.get('type');
   const at   = p.get('access_token');
   const rt   = p.get('refresh_token');
+
   if (type === 'recovery' && at && rt) {
     const { error } = await supabase.auth.setSession({ access_token: at, refresh_token: rt });
-    return !error;
+    if (error) return false;
+    // bezpečně odstraň tokeny z URL bez reloadu
+    history.replaceState({}, document.title, location.pathname + location.search);
+    return true;
   }
   return false;
 }
 
-function handleExpiredLink() {
-  // hezky ošetři expirovaný/špatný odkaz
-  showMsg('Odkaz pro změnu hesla je neplatný nebo vypršel. Požádej o nový.');
-}
+// auto-open pouze pokud máme recovery session
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') openDlg();
+});
 
-async function initResetFlow() {
-  // 1) jestli je v URL chyba z Supabase (otp_expired apod.), rovnou to řekni
-  const h = new URLSearchParams(location.hash.slice(1));
-  const errorCode = h.get('error_code');
-  if (errorCode) {
-    handleExpiredLink();
-    return;
-  }
+(async () => {
+  if (await ensureRecoverySessionFromHash()) openDlg();
+})();
 
-  // 2) pokusit se nastavit session z hash (nebo už je)
-  const ok = await ensureRecoverySessionFromHash();
-  if (!ok) return; // není platný link → neukazuj dialog
-
-  // 3) otevři dialog
-  openDialog();
-}
-
+// handler "Uložit"
 btn?.addEventListener('click', async (e) => {
   e.preventDefault();
   const p1 = document.getElementById('newPass1')?.value?.trim();
@@ -55,24 +47,16 @@ btn?.addEventListener('click', async (e) => {
 
   showMsg('Ukládám…');
 
-  // pojistka: pokud mezitím session zmizela, zkus ji znovu vytvořit
-  const ok = await ensureRecoverySessionFromHash();
-  if (!ok) { showMsg('Odkaz již neplatí. Požádej o nový.'); return; }
+  // pojistka – session MUSÍ existovat
+  if (!(await ensureRecoverySessionFromHash())) {
+    showMsg('Odkaz je neplatný nebo vypršel. Požádej o nový.');
+    return;
+  }
 
   const { error } = await supabase.auth.updateUser({ password: p1 });
   if (error) { showMsg('Chyba: ' + error.message); return; }
 
   showMsg('Heslo změněno, odhlašuji…');
-  await supabase.auth.signOut();      // ukonči recovery session
-  location.assign('/aplikace-v4/');   // uprav, kam chceš po úspěchu
-});
-
-// spustit hned po načtení
-initResetFlow();
-
-// Když knihovna doručí event později (auto-detekce hashe), otevři dialog i tak
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-    openDialog();
-  }
+  await supabase.auth.signOut();                 // ukonči recovery session
+  location.assign('/aplikace-v4/');              // cílová stránka (změň dle potřeby)
 });
