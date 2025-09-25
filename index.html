@@ -5,54 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pronajímatel – Supabase</title>
 
-  <!-- Favicon (ať není 404 v konzoli) -->
   <link rel="icon" href="/favicon.ico" />
-
-  <!-- Tailwind z CDN (OK pro prototyp) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <!-- Header -->
   <header class="w-full bg-white border-b sticky top-0 z-50">
     <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-3">
       <div id="app-logo" class="font-semibold text-lg">🏠 Pronajímatel</div>
-
       <div class="ml-auto flex items-center gap-2">
-        <button class="btn-ghost px-2 py-1 text-sm" title="Hledat">🔍</button>
-        <button class="btn-ghost px-2 py-1 text-sm" title="Notifikace">🔔</button>
-
         <span id="userName" class="text-sm text-slate-600"></span>
-        <button id="btnAccount" class="btn-ghost px-2 py-1 text-sm" title="Můj účet">👤</button>
-
         <button id="btnAuth" class="px-3 py-1 rounded bg-slate-900 text-white text-sm">Přihlásit</button>
-        <div id="toolbar"></div>
       </div>
     </div>
   </header>
 
-  <!-- Layout -->
   <main class="max-w-[1400px] mx-auto p-4">
     <div class="grid grid-cols-[260px_1fr] gap-4">
       <aside id="sidebar" class="card p-2"></aside>
-
       <section>
-        <!-- Horní řádka vpravo -->
         <div class="flex items-center justify-between mb-2">
           <button id="home-button" class="px-3 py-1 border rounded text-sm inline-flex items-center gap-1">🏠 Domů</button>
         </div>
-
-        <!-- Breadcrumbs + pravé akce -->
-        <div class="flex items-center justify-between mb-2">
-          <div id="breadcrumbs" class="text-xs text-slate-500"></div>
-          <div id="crumb-actions" class="flex items-center gap-2"></div>
-        </div>
-
-        <!-- (volitelně) Tiles/Main action bar -->
-        <div id="actions-bar" class="mb-3 flex flex-wrap gap-2"></div>
-
-        <!-- Pracovní plocha -->
         <div id="content"></div>
       </section>
     </div>
@@ -62,41 +36,17 @@
   <dialog id="authDialog" class="rounded-xl p-0 w-full max-w-sm">
     <form method="dialog" class="p-4 bg-white" autocomplete="on">
       <h2 class="font-semibold mb-3">Přihlášení / Registrace</h2>
-
       <label class="block text-sm mb-2" for="authEmail">Email</label>
-      <input
-        id="authEmail"
-        name="email"
-        class="w-full border rounded p-2 mb-3"
-        type="email"
-        autocomplete="username email"
-        spellcheck="false"
-        autofocus
-        required
-      />
-
+      <input id="authEmail" class="w-full border rounded p-2 mb-3" type="email" autocomplete="username email" required />
       <label class="block text-sm mb-2" for="authPass">Heslo</label>
-      <input
-        id="authPass"
-        name="current-password"
-        class="w-full border rounded p-2 mb-4"
-        type="password"
-        minlength="6"
-        autocomplete="current-password"
-        required
-      />
-
+      <input id="authPass" class="w-full border rounded p-2 mb-4" type="password" minlength="6" autocomplete="current-password" required />
       <div class="flex gap-2">
         <button id="btnDoLogin"  type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
         <button id="btnDoSignup" type="button" class="px-3 py-2 border rounded bg-white">Registrovat</button>
         <button id="btnCloseAuth" type="button" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
       </div>
-
       <p id="authMsg" class="text-sm text-slate-500 mt-3"></p>
-
-      <p class="text-xs mt-2">
-        <a id="lnkForgot" class="underline text-slate-500 cursor-pointer">Zapomenuté heslo?</a>
-      </p>
+      <p class="text-xs mt-2"><a id="lnkForgot" class="underline text-slate-500 cursor-pointer">Zapomenuté heslo?</a></p>
     </form>
   </dialog>
 
@@ -105,15 +55,12 @@
     <form method="dialog" class="p-4 bg-white">
       <h2 class="font-semibold mb-3">Obnovit heslo</h2>
       <p class="text-sm mb-3">Pošleme odkaz na e-mail pro nastavení nového hesla.</p>
-
       <label class="block text-sm mb-2" for="resetEmail">Email</label>
       <input id="resetEmail" type="email" class="w-full border rounded p-2 mb-4" required />
-
       <div class="flex gap-2">
         <button id="btnSendReset" type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Poslat odkaz</button>
         <button id="btnCloseResetEmail" type="button" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
       </div>
-
       <p id="resetEmailMsg" class="text-sm text-slate-500 mt-3"></p>
     </form>
   </dialog>
@@ -122,25 +69,19 @@
   <dialog id="resetPassDialog" class="rounded-xl p-0 w-full max-w-sm">
     <form method="dialog" class="p-4 bg-white">
       <h2 class="font-semibold mb-3">Nastavit nové heslo</h2>
-
       <label class="block text-sm mb-2" for="newPass1">Nové heslo</label>
-      <input id="newPass1" type="password" minlength="6" autocomplete="new-password"
-             class="w-full border rounded p-2 mb-3" required />
-
+      <input id="newPass1" type="password" minlength="6" autocomplete="new-password" class="w-full border rounded p-2 mb-3" required />
       <label class="block text-sm mb-2" for="newPass2">Potvrdit heslo</label>
-      <input id="newPass2" type="password" minlength="6" autocomplete="new-password"
-             class="w-full border rounded p-2 mb-4" required />
-
+      <input id="newPass2" type="password" minlength="6" autocomplete="new-password" class="w-full border rounded p-2 mb-4" required />
       <div class="flex gap-2">
         <button id="btnSetNewPass"  type="button" class="px-3 py-2 bg-slate-900 text-white rounded">Uložit</button>
         <button id="btnCloseResetPass" type="button" class="ml-auto px-3 py-2 border rounded bg-white">Zavřít</button>
       </div>
-
       <p id="resetPassMsg" class="text-sm text-slate-500 mt-3"></p>
     </form>
   </dialog>
 
-  <!-- Aplikace -->
+  <script type="module" src="./src/supabase.js"></script>
   <script type="module" src="./src/main.js"></script>
   <script type="module" src="./src/reset.js"></script>
 </body>

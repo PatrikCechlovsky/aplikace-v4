@@ -1,10 +1,8 @@
-// src/supabase.js
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export const SUPABASE_URL = "https://jgqgfbuagoypladyjjfl.supabase.co";
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpncWdmYnVhZ295cGxhZHlqamZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MTA3MTcsImV4cCI6MjA3NDA4NjcxN30.O5vvOyiYlIJb_bxaBbYF8Sn9sm2ReB7vDgASVm3dT3g";
+export const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-// vytvoření klienta
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -13,4 +11,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+// zpřístupni pro konzoli/debug
 window.supabase = supabase;
+
+console.log("[SUPABASE INIT]", SUPABASE_URL);
