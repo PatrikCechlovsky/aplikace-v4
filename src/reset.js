@@ -8,37 +8,33 @@ const showMsg = (t) => { if (msgEl) msgEl.textContent = t; };
 const openDlg = () => dlg?.showModal?.();
 
 async function ensureRecoverySessionFromHash() {
-  // už je session?
+  // už existuje session?
   const { data } = await supabase.auth.getSession();
   if (data?.session) return true;
 
-  // přečti původní hash (NEž ho kdokoliv smaže)
-  const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
-  const p = new URLSearchParams(hash);
+  // přečti hash dřív, než ho cokoliv smaže
+  const p = new URLSearchParams(location.hash.slice(1));
   const type = p.get('type');
   const at   = p.get('access_token');
   const rt   = p.get('refresh_token');
 
   if (type === 'recovery' && at && rt) {
-    const { error } = await supabase.auth.setSession({ access_token: at, refresh_token: rt });
-    if (error) return false;
-    // bezpečně odstraň tokeny z URL bez reloadu
+    const { data: s, error } = await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+    if (error || !s?.session) return false;
+    // bezpečně skryj tokeny v URL
     history.replaceState({}, document.title, location.pathname + location.search);
     return true;
   }
   return false;
 }
 
-// auto-open pouze pokud máme recovery session
+// Otevři dialog jen pokud máme recovery session
 supabase.auth.onAuthStateChange((event) => {
   if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') openDlg();
 });
+(async () => { if (await ensureRecoverySessionFromHash()) openDlg(); })();
 
-(async () => {
-  if (await ensureRecoverySessionFromHash()) openDlg();
-})();
-
-// handler "Uložit"
+// Handler „Uložit“
 btn?.addEventListener('click', async (e) => {
   e.preventDefault();
   const p1 = document.getElementById('newPass1')?.value?.trim();
@@ -58,5 +54,5 @@ btn?.addEventListener('click', async (e) => {
 
   showMsg('Heslo změněno, odhlašuji…');
   await supabase.auth.signOut();                 // ukonči recovery session
-  location.assign('/aplikace-v4/');              // cílová stránka (změň dle potřeby)
+  location.assign('/aplikace-v4/');              // uprav dle potřeby
 });
